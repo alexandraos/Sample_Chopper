@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Sample Chopper</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
+    <style>
+        /* Custom pad press animation */
+        .pad-active {
+            transform: scale(0.95);
+            background-color: #f97316 !important; /* Tailwind orange-500 */
+            box-shadow: 0 0 15px #f97316;
+        }
+        input[type="number"], input[type="text"] {
+            outline: none;
+        }
+
+        /* Custom scrollbar to keep UI looking sleek when scrolling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #171717; 
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #525252; 
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #737373; 
+        }
+    </style>
+</head>
+<body class="bg-neutral-900 text-neutral-200 font-sans h-screen flex flex-col overflow-hidden">
+
+    <!-- Top Navigation / Header -->
+    <header class="bg-neutral-950 p-4 border-b border-neutral-800 flex justify-between items-center shadow-md z-20">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center font-bold text-white shadow-lg">C</div>
+            <h1 class="text-xl font-semibold tracking-wider text-white uppercase">Web Sample Chopper</h1>
+        </div>
+        <div class="flex items-center gap-4">
+            <!-- Recording Controls -->
+            <div class="flex items-center gap-2 border-r border-neutral-700 pr-4">
+                <button id="btn-record-perf" class="bg-red-900/50 hover:bg-red-600 border border-red-800 text-white text-sm py-2 px-4 rounded transition-colors flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-red-500"></span> Record
+                </button>
+                <a id="btn-download-perf" class="hidden bg-green-700 hover:bg-green-600 border border-green-800 text-white text-sm py-2 px-4 rounded transition-colors items-center gap-2 cursor-pointer">
+                    ⬇️ Export
+                </a>
+            </div>
+
+            <label class="bg-neutral-800 hover:bg-neutral-700 text-sm py-2 px-4 rounded cursor-pointer transition-colors border border-neutral-700">
+                Load Sample (MP3/WAV)
+                <input type="file" id="audio-upload" accept="audio/*" class="hidden">
+            </label>
+            <div id="midi-status" class="text-xs px-2 py-1 rounded bg-neutral-800 border border-neutral-700 text-neutral-400">MIDI: Disconnected</div>
+            
+            <!-- Instructions Bubble -->
+            <div class="relative group ml-2">
+                <button class="w-8 h-8 rounded-full border-2 border-neutral-600 flex items-center justify-center text-neutral-400 hover:text-white hover:border-white transition-colors bg-neutral-800">
+                    <span class="font-serif italic font-bold">i</span>
+                </button>
+                
+                <!-- Bubble Content -->
+                <div class="absolute right-0 top-full mt-4 w-80 bg-neutral-800 border border-neutral-600 rounded-lg shadow-2xl p-5 text-sm text-neutral-300 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
+                    <!-- Triangle pointer -->
+                    <div class="absolute -top-2 right-3 w-4 h-4 bg-neutral-800 border-t border-l border-neutral-600 transform rotate-45"></div>
+                    
+                    <h3 class="text-white font-bold mb-3 text-base border-b border-neutral-700 pb-2 relative z-10">How to Use</h3>
+                    <ul class="list-disc pl-4 space-y-2 relative z-10">
+                        <li><strong class="text-orange-400">Load:</strong> Upload an audio file. The BPM is automatically detected.</li>
+                        <li><strong class="text-orange-400">Chop:</strong> Splits the audio into 16 beat-synced slices across the pads.</li>
+                        <li><strong class="text-orange-400">Play:</strong> Use your computer keyboard (1-4, Q-R, A-F, Z-V) or a MIDI controller.</li>
+                        <li><strong class="text-orange-400">Edit:</strong> Click a pad, then drag markers on the waveform to fine-tune its timing. Adjust Pitch & Speed in the editor.</li>
+                        <li><strong class="text-orange-400">Record:</strong> Capture your live performance and export it as an MP3!</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Layout -->
+    <main class="flex-1 flex flex-col p-4 gap-4 overflow-y-auto">
+        
+        <!-- Waveform Viewer -->
+        <div class="w-full h-48 bg-neutral-950 rounded-lg border border-neutral-800 relative shadow-inner flex-shrink-0 group overflow-hidden">
+            <canvas id="waveform-canvas" class="w-full h-full absolute top-0 left-0 cursor-grab"></canvas>
+            <div id="waveform-overlay" class="w-full h-full absolute top-0 left-0 pointer-events-none"></div>
+            
+            <!-- UX Hint Overlay -->
+            <div class="absolute top-2 right-2 bg-black/70 border border-neutral-700 text-neutral-400 text-[10px] px-2 py-1 rounded pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity shadow-lg backdrop-blur-sm">
+                Scroll to Zoom • Click & Drag to Pan • Dbl-Click to Reset
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="absolute inset-0 flex items-center justify-center text-neutral-600 pointer-events-none">
+                Please load a sample to begin
+            </div>
+        </div>
+
+        <!-- Toolbar: Grid & Sequencing -->
+        <div class="flex flex-col md:flex-row gap-4 flex-shrink-0">
+            <!-- Beatgrid Controls -->
+            <div class="bg-neutral-800 rounded-lg p-4 border border-neutral-700 flex-1 flex flex-col justify-between">
+                <h2 class="text-xs font-bold text-neutral-400 uppercase mb-2 tracking-wider">Auto Chop (Beatgrid)</h2>
+                <div class="flex items-end gap-3">
+                    <div class="flex flex-col">
+                        <label class="text-xs text-neutral-500 mb-1">Sample BPM</label>
+                        <input type="text" id="bpm-input" value="120" class="bg-neutral-900 border border-neutral-700 text-white p-2 rounded w-24 text-center font-mono">
+                    </div>
+                    <button id="btn-autochop" class="bg-orange-600 hover:bg-orange-500 text-white font-medium py-2 px-4 rounded transition-colors shadow-lg">
+                        Chop to Pads
+                    </button>
+                    <button id="btn-stop" class="bg-red-900/50 hover:bg-red-600 border border-red-800 text-white font-medium py-2 px-4 rounded transition-colors ml-auto">
+                        Stop Audio
+                    </button>
+                </div>
+            </div>
+
+            <!-- Visual Remix Sequencer -->
+            <div class="bg-neutral-800 rounded-lg p-4 border border-neutral-700 flex-[2] flex flex-col justify-between">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-xs font-bold text-neutral-400 uppercase tracking-wider">Remix Sequencer</h2>
+                    <div class="flex gap-2">
+                        <button id="btn-record-seq" class="bg-red-900/50 hover:bg-red-600 text-white text-xs py-1 px-3 rounded transition-colors border border-red-800 font-bold uppercase">Rec</button>
+                        <button id="btn-clear-seq" class="bg-neutral-700 hover:bg-neutral-600 text-white text-xs py-1 px-3 rounded transition-colors">Clear</button>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <div id="sequence-track" class="flex gap-1 overflow-x-auto p-2 bg-neutral-900 border border-neutral-700 rounded h-16 items-center shadow-inner relative scroll-smooth">
+                        <span id="seq-empty-text" class="text-neutral-600 text-xs italic absolute inset-0 flex items-center justify-center pointer-events-none">Hit REC and press pads, or generate a remix...</span>
+                    </div>
+                    <div class="flex items-center justify-between mt-1">
+                        <button id="btn-gen-remix" class="text-xs text-orange-400 hover:text-orange-300 transition-colors font-medium">✨ Auto-Remix</button>
+                        <button id="btn-play-sequence" class="bg-orange-600 hover:bg-orange-500 text-white font-medium py-1 px-6 rounded transition-colors text-sm shadow-md">
+                            ▶ Play Sequence
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lower Section: Truncation Editor & Pads -->
+        <div class="flex flex-col lg:flex-row gap-4 flex-1 min-h-[300px]">
+            
+            <!-- Truncation / Slice Editor -->
+            <div class="bg-neutral-800 rounded-lg p-3 border border-neutral-700 w-full lg:w-64 flex flex-col overflow-y-auto max-h-[500px]">
+                <h2 class="text-xs font-bold text-neutral-400 uppercase mb-3 tracking-wider flex-shrink-0">Slice Editor</h2>
+                <div id="editor-empty" class="text-sm text-neutral-500 italic flex-1 flex items-center justify-center text-center">
+                    Click a pad to select a slice. Drag markers on waveform to adjust.
+                </div>
+                <div id="editor-controls" class="hidden flex-col gap-2 flex-shrink-0">
+                    <div class="flex justify-between items-center bg-neutral-900 p-2 rounded">
+                        <span class="text-xs font-bold text-neutral-500">SELECTED PAD</span>
+                        <span id="edit-pad-key" class="font-mono text-orange-500 font-bold">-</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[10px] text-neutral-400 uppercase">Start (s)</label>
+                            <input type="number" id="edit-start" step="0.001" min="0" class="bg-neutral-900 border border-neutral-700 p-1.5 rounded font-mono text-xs w-full">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[10px] text-neutral-400 uppercase">End (s)</label>
+                            <input type="number" id="edit-end" step="0.001" min="0" class="bg-neutral-900 border border-neutral-700 p-1.5 rounded font-mono text-xs w-full">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-x-3 gap-y-2 mt-2 bg-neutral-900/50 p-2 rounded border border-neutral-700/50">
+                        <div class="flex flex-col gap-1 col-span-1">
+                            <div class="flex justify-between">
+                                <label class="text-[10px] text-neutral-400 uppercase">Pitch</label>
+                                <span id="val-pitch" class="text-[10px] text-orange-400 font-mono">0 st</span>
+                            </div>
+                            <input type="range" id="edit-pitch" min="-12" max="12" step="1" value="0" class="w-full h-1 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-orange-500">
+                        </div>
+                        <div class="flex flex-col gap-1 col-span-1">
+                            <div class="flex justify-between">
+                                <label class="text-[10px] text-neutral-400 uppercase">Speed</label>
+                                <span id="val-speed" class="text-[10px] text-orange-400 font-mono">1.00x</span>
+                            </div>
+                            <input type="range" id="edit-speed" min="0.25" max="4" step="0.05" value="1" class="w-full h-1 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-orange-500">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <div class="flex justify-between">
+                                <label class="text-[10px] text-neutral-400 uppercase">Attack</label>
+                                <span id="val-attack" class="text-[10px] text-orange-400 font-mono">0.01s</span>
+                            </div>
+                            <input type="range" id="edit-attack" min="0" max="1" step="0.01" value="0.01" class="w-full h-1 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-orange-500">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <div class="flex justify-between">
+                                <label class="text-[10px] text-neutral-400 uppercase">Release</label>
+                                <span id="val-release" class="text-[10px] text-orange-400 font-mono">0.10s</span>
+                            </div>
+                            <input type="range" id="edit-release" min="0" max="2" step="0.01" value="0.1" class="w-full h-1 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-orange-500">
+                        </div>
+                    </div>
+
+                    <!-- Play Mode & Choke Groups -->
+                    <div class="grid grid-cols-2 gap-x-3 bg-neutral-900/50 p-2 rounded border border-neutral-700/50 mt-2">
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[10px] text-neutral-400 uppercase">Play Mode</label>
+                            <select id="edit-playmode" class="bg-neutral-800 border border-neutral-700 text-xs p-1 rounded text-white outline-none focus:border-orange-500">
+                                <option value="choke">Choke Group</option>
+                                <option value="oneshot">One-Shot</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="text-[10px] text-neutral-400 uppercase">Group ID</label>
+                            <select id="edit-chokegroup" class="bg-neutral-800 border border-neutral-700 text-xs p-1 rounded text-white outline-none focus:border-orange-500 transition-opacity disabled:cursor-not-allowed">
+                                <option value="1">Group 1</option>
+                                <option value="2">Group 2</option>
+                                <option value="3">Group 3</option>
+                                <option value="4">Group 4</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2 mt-2">
+                        <button id="btn-reverse" class="flex-1 bg-neutral-700 hover:bg-neutral-600 py-1.5 rounded text-[10px] uppercase font-bold transition-colors border border-neutral-600">
+                            Rev: OFF
+                        </button>
+                        <button id="btn-apply-edit" class="flex-1 bg-neutral-700 hover:bg-neutral-600 py-1.5 rounded text-[10px] uppercase font-bold transition-colors border border-neutral-600">
+                            Apply Times
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 16 Pads (4x4 Grid) -->
+            <div class="bg-neutral-950 border border-neutral-800 rounded-lg p-3 flex-1 flex items-center justify-center shadow-inner min-h-[300px]">
+                <div id="pads-container" class="grid grid-cols-4 grid-rows-4 gap-2 w-full h-full max-w-[500px] max-h-[500px] mx-auto">
+                    <!-- Pads will be generated here -->
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- Global State ---
+        let audioCtx;
+        let audioBuffer;
+        let streamDestination; // Added for performance recording
+        let mediaRecorder;     // Added for performance recording
+        let recordedChunks = []; // Added for performance recording
+        let slices = []; // Array of { id, start, end, key, padIndex, pitch, speed, reverse, attack, release, processedBuffer }
+        let activeSources = [];
+        let selectedPadIndex = null;
+        
+        // Sequencer & Visual State
+        let sequence = [];
+        let isRecordingSeq = false;
+        let isSequencerPlaying = false;
+        let currentlyPlayingSlice = null; // Used for canvas highlighting
+        
+        // Dragging & View State
+        let isDraggingMarker = false;
+        let dragTarget = null; // 'start' or 'end'
+        let zoom = 1;
+        let pan = 0; // left edge offset in seconds
+        let isPanning = false;
+        let lastPanX = 0;
+
+        // Configuration
+        const PAD_KEYS = ['1','2','3','4','Q','W','E','R','A','S','D','F','Z','X','C','V'];
+        const MIDI_START_NOTE = 36; // C1 triggers pad 1
+
+        // DOM Elements
+        const canvas = document.getElementById('waveform-canvas');
+        const ctx = canvas.getContext('2d');
+        const padsContainer = document.getElementById('pads-container');
+        const fileInput = document.getElementById('audio-upload');
+        const bpmInput = document.getElementById('bpm-input');
+        const autoChopBtn = document.getElementById('btn-autochop');
+        const stopBtn = document.getElementById('btn-stop');
+        const playSequenceBtn = document.getElementById('btn-play-sequence');
+        const emptyState = document.getElementById('empty-state');
+        
+        // Recording Elements
+        const recordPerfBtn = document.getElementById('btn-record-perf');
+        const downloadPerfBtn = document.getElementById('btn-download-perf');
+        
+        // Editor Elements
+        const editorEmpty = document.getElementById('editor-empty');
+        const editorControls = document.getElementById('editor-controls');
+        const editStartInput = document.getElementById('edit-start');
+        const editEndInput = document.getElementById('edit-end');
+        const editPadKey = document.getElementById('edit-pad-key');
+        const applyEditBtn = document.getElementById('btn-apply-edit');
+        const reverseBtn = document.getElementById('btn-reverse');
+        
+        // Mode Elements
+        const editPlaymode = document.getElementById('edit-playmode');
+        const editChokegroup = document.getElementById('edit-chokegroup');
+
+        // --- Initialization ---
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                streamDestination = audioCtx.createMediaStreamDestination();
+            }
+        }
+
+        function initPads() {
+            padsContainer.innerHTML = '';
+            PAD_KEYS.forEach((key, index) => {
+                const pad = document.createElement('div');
+                pad.className = 'bg-neutral-800 border-2 border-neutral-700 rounded-md flex items-start justify-start p-2 cursor-pointer shadow-md select-none transition-transform relative overflow-hidden w-full h-full';
+                pad.id = `pad-${index}`;
+                
+                const label = document.createElement('span');
+                label.className = 'font-mono text-sm font-bold text-neutral-500 pointer-events-none';
+                label.innerText = key;
+                
+                const midiHint = document.createElement('span');
+                midiHint.className = 'absolute bottom-1 right-1 text-[10px] text-neutral-600 pointer-events-none';
+                midiHint.innerText = `M${MIDI_START_NOTE + index}`;
+
+                pad.appendChild(label);
+                pad.appendChild(midiHint);
+                pad.addEventListener('mousedown', () => handlePadTrigger(index));
+                
+                padsContainer.appendChild(pad);
+            });
+        }
+
+        // --- Audio File Handling & BPM Detection ---
+
+        async function detectBPM(buffer) {
+            bpmInput.value = "⏳";
+            try {
+                // Use OfflineAudioContext for fast heuristic processing
+                const offlineCtx = new OfflineAudioContext(1, buffer.length, buffer.sampleRate);
+                const source = offlineCtx.createBufferSource();
+                source.buffer = buffer;
+                
+                // Lowpass filter to focus on kick drums/bass
+                const filter = offlineCtx.createBiquadFilter();
+                filter.type = "lowpass";
+                filter.frequency.value = 150; 
+                
+                source.connect(filter);
+                filter.connect(offlineCtx.destination);
+                source.start(0);
+                
+                const renderedBuffer = await offlineCtx.startRendering();
+                const data = renderedBuffer.getChannelData(0);
+                
+                // Peak detection
+                let maxVal = 0;
+                for(let i=0; i<data.length; i++) if(data[i] > maxVal) maxVal = data[i];
+                const threshold = maxVal * 0.8;
+                
+                let peaks = [];
+                for(let i=0; i<data.length; i++) {
+                    if (data[i] > threshold) {
+                        peaks.push(i / buffer.sampleRate);
+                        i += Math.floor(buffer.sampleRate / 4); // skip ~250ms forward
+                    }
+                }
+                
+                // Interval grouping
+                let intervals = {};
+                for(let i=1; i<peaks.length; i++) {
+                    let diff = peaks[i] - peaks[i-1];
+                    let bpm = Math.round(60 / diff);
+                    // Filter to standard tempo range
+                    while(bpm < 70) bpm *= 2;
+                    while(bpm > 160) bpm /= 2;
+                    if (bpm >= 70 && bpm <= 160) {
+                        intervals[bpm] = (intervals[bpm] || 0) + 1;
+                    }
+                }
+                
+                let guessedBPM = 120;
+                let maxCount = 0;
+                for (const [bpmStr, count] of Object.entries(intervals)) {
+                    if (count > maxCount) {
+                        maxCount = count;
+                        guessedBPM = parseInt(bpmStr);
+                    }
+                }
+                bpmInput.value = guessedBPM || 120;
+            } catch(e) {
+                console.error("BPM auto-detection failed, defaulting to 120", e);
+                bpmInput.value = 120;
+            }
+        }
+
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            initAudio();
+            emptyState.style.display = 'none';
+            
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                try {
+                    const arrayBuffer = ev.target.result;
+                    audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                    slices = []; 
+                    zoom = 1; // Reset zoom on new load
+                    pan = 0;  // Reset pan
+                    drawWaveform();
+                    await detectBPM(audioBuffer); // Auto detect BPM
+                    autoChop(); 
+                } catch (err) {
+                    alert("Error decoding audio file.");
+                    console.error(err);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        // --- Waveform Rendering & Canvas Dragging ---
+
+        function drawWaveform() {
+            if (!audioBuffer) return;
+
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            const data = audioBuffer.getChannelData(0); 
+            const totalDuration = audioBuffer.duration;
+            const visibleDuration = totalDuration / zoom;
+            
+            // Clamp pan to boundaries
+            pan = Math.max(0, Math.min(pan, totalDuration - visibleDuration));
+
+            const sampleRate = audioBuffer.sampleRate;
+            const startSample = Math.floor(pan * sampleRate);
+            const endSample = Math.min(data.length, Math.floor((pan + visibleDuration) * sampleRate));
+            const samplesVisible = endSample - startSample;
+
+            const step = Math.max(1, Math.ceil(samplesVisible / width));
+            const amp = height / 2;
+            
+            ctx.fillStyle = '#525252'; 
+            
+            for (let i = 0; i < width; i++) {
+                let min = 1.0; let max = -1.0;
+                let dataStart = startSample + i * step;
+                if (dataStart >= data.length) break;
+
+                for (let j = 0; j < step; j++) {
+                    const datum = data[dataStart + j];
+                    if (datum < min) min = datum;
+                    if (datum > max) max = datum;
+                }
+                ctx.fillRect(i, (1 + min) * amp, 1, Math.max(1, (max - min) * amp));
+            }
+            drawSliceMarkers();
+        }
+
+        function drawSliceMarkers() {
+            if (!audioBuffer) return;
+            const width = canvas.width;
+            const height = canvas.height;
+            const visibleDuration = audioBuffer.duration / zoom;
+
+            slices.forEach((slice) => {
+                const xStart = ((slice.start - pan) / visibleDuration) * width;
+                const xEnd = ((slice.end - pan) / visibleDuration) * width;
+                
+                // Color regions based on state
+                if (currentlyPlayingSlice === slice.padIndex) {
+                    ctx.fillStyle = 'rgba(239, 68, 68, 0.4)'; // Red if playing sequence
+                } else if (selectedPadIndex === slice.padIndex) {
+                    ctx.fillStyle = 'rgba(249, 115, 22, 0.2)'; // Orange if selected
+                } else {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+                }
+                
+                // Only draw rect if it's somewhat on screen to prevent massive rect issues
+                if (xEnd > 0 && xStart < width) {
+                    ctx.fillRect(Math.max(0, xStart), 0, Math.min(width, xEnd) - Math.max(0, xStart), height);
+                }
+                
+                // Draw enhanced lines & drag handles for SELECTED slice
+                if (selectedPadIndex === slice.padIndex) {
+                    // Start Marker (Orange)
+                    if (xStart >= -10 && xStart <= width + 10) {
+                        ctx.fillStyle = '#f97316';
+                        ctx.fillRect(xStart - 1, 0, 3, height);
+                        ctx.beginPath(); ctx.arc(xStart, 10, 5, 0, Math.PI * 2); ctx.fill();
+                    }
+                    
+                    // End Marker (Reddish)
+                    if (xEnd >= -10 && xEnd <= width + 10) {
+                        ctx.fillStyle = '#ef4444';
+                        ctx.fillRect(xEnd - 1, 0, 3, height);
+                        ctx.beginPath(); ctx.arc(xEnd, height - 10, 5, 0, Math.PI * 2); ctx.fill();
+                    }
+                } else {
+                    // Regular slice line
+                    if (xStart >= 0 && xStart <= width) {
+                        ctx.strokeStyle = 'rgba(249, 115, 22, 0.3)';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(xStart, 0);
+                        ctx.lineTo(xStart, height);
+                        ctx.stroke();
+                    }
+                }
+                
+                // Key label
+                if (xStart >= -20 && xStart <= width) {
+                    ctx.fillStyle = (selectedPadIndex === slice.padIndex || currentlyPlayingSlice === slice.padIndex) ? '#fff' : '#f97316';
+                    ctx.font = '10px monospace';
+                    ctx.fillText(slice.key, Math.max(4, xStart + 4), 14);
+                }
+            });
+        }
+
+        // Viewport Utility
+        function getTimeAtCursor(e) {
+            const rect = canvas.getBoundingClientRect();
+            const visibleDuration = audioBuffer.duration / zoom;
+            return pan + ((e.clientX - rect.left) / canvas.width) * visibleDuration;
+        }
+
+        // Canvas Interaction Events (Zoom, Pan, Drag & Drop markers)
+        
+        canvas.addEventListener('wheel', (e) => {
+            if (!audioBuffer) return;
+            e.preventDefault(); // Stop page scrolling
+            
+            const timeAtCursorBefore = getTimeAtCursor(e);
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+
+            // Zoom multiplier
+            const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85; 
+            zoom *= zoomFactor;
+            zoom = Math.max(1, Math.min(zoom, 500)); // Cap zoom between 1x and 500x
+
+            const visibleDurationAfter = audioBuffer.duration / zoom;
+
+            // Adjust pan to keep the mouse anchored to the same timestamp
+            pan = timeAtCursorBefore - (mouseX / canvas.width) * visibleDurationAfter;
+            pan = Math.max(0, Math.min(pan, audioBuffer.duration - visibleDurationAfter));
+
+            drawWaveform();
+        });
+
+        canvas.addEventListener('dblclick', () => {
+            // Reset View
+            zoom = 1; pan = 0;
+            drawWaveform();
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!audioBuffer) return;
+            const timeAtCursor = getTimeAtCursor(e);
+            
+            if (isDraggingMarker && selectedPadIndex !== null) {
+                const slice = slices.find(s => s.padIndex === selectedPadIndex);
+                if (dragTarget === 'start') {
+                    slice.start = Math.max(0, Math.min(timeAtCursor, slice.end - 0.001));
+                    editStartInput.value = slice.start.toFixed(3);
+                } else if (dragTarget === 'end') {
+                    slice.end = Math.min(audioBuffer.duration, Math.max(timeAtCursor, slice.start + 0.001));
+                    editEndInput.value = slice.end.toFixed(3);
+                }
+                drawWaveform();
+            } else if (isPanning) {
+                const deltaX = e.clientX - lastPanX;
+                const visibleDuration = audioBuffer.duration / zoom;
+                const timeDelta = (deltaX / canvas.width) * visibleDuration;
+                
+                pan -= timeDelta;
+                pan = Math.max(0, Math.min(pan, audioBuffer.duration - visibleDuration));
+                lastPanX = e.clientX;
+                drawWaveform();
+            } else {
+                // Hover detection logic to change cursor style
+                let hoverFound = false;
+                if (selectedPadIndex !== null) {
+                    const slice = slices.find(s => s.padIndex === selectedPadIndex);
+                    const visibleDuration = audioBuffer.duration / zoom;
+                    const timeTolerance = (8 / canvas.width) * visibleDuration; // 8 pixels converted to time
+                    
+                    if (Math.abs(slice.start - timeAtCursor) < timeTolerance || Math.abs(slice.end - timeAtCursor) < timeTolerance) {
+                        canvas.style.cursor = 'ew-resize';
+                        hoverFound = true;
+                    }
+                }
+                if (!hoverFound) {
+                    canvas.style.cursor = zoom > 1 ? 'grab' : 'crosshair';
+                }
+            }
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (!audioBuffer) return;
+            const timeAtCursor = getTimeAtCursor(e);
+            let targetFound = false;
+            
+            if (selectedPadIndex !== null) {
+                const slice = slices.find(s => s.padIndex === selectedPadIndex);
+                const visibleDuration = audioBuffer.duration / zoom;
+                const timeTolerance = (8 / canvas.width) * visibleDuration;
+                
+                if (Math.abs(slice.start - timeAtCursor) < timeTolerance) {
+                    isDraggingMarker = true; dragTarget = 'start'; targetFound = true;
+                } else if (Math.abs(slice.end - timeAtCursor) < timeTolerance) {
+                    isDraggingMarker = true; dragTarget = 'end'; targetFound = true;
+                }
+            }
+
+            if (!targetFound) {
+                isPanning = true;
+                lastPanX = e.clientX;
+                canvas.style.cursor = 'grabbing';
+            }
+        });
+
+        window.addEventListener('mouseup', async () => {
+            const wasDragging = isDraggingMarker;
+            isDraggingMarker = false;
+            dragTarget = null;
+            if (isPanning) {
+                isPanning = false;
+                canvas.style.cursor = zoom > 1 ? 'grab' : 'crosshair';
+            }
+            if (wasDragging && selectedPadIndex !== null) {
+                // If a user was dragging markers, safely rebuild the audio buffer when they let go
+                const slice = slices.find(s => s.padIndex === selectedPadIndex);
+                await processSliceBuffer(slice);
+            }
+        });
+
+        // --- Slicing Logic ---
+
+        async function processSliceBuffer(slice) {
+            if (!audioBuffer) return;
+            
+            const sampleRate = audioBuffer.sampleRate;
+            const startSample = Math.floor(slice.start * sampleRate);
+            const endSample = Math.floor(slice.end * sampleRate);
+            const length = endSample - startSample;
+            if (length <= 0) return;
+
+            // Extract exact slice to prevent memory sharing issues
+            let sliceData = [];
+            for (let c=0; c<audioBuffer.numberOfChannels; c++) {
+                sliceData.push(new Float32Array(audioBuffer.getChannelData(c).subarray(startSample, endSample)));
+            }
+
+            // Reverse
+            if (slice.reverse) {
+                for (let c=0; c<audioBuffer.numberOfChannels; c++) {
+                    sliceData[c].reverse();
+                }
+            }
+
+            // Calculate exact stretch compensation to detach speed from pitch
+            const durationMultiplier = 1 / (slice.speed || 1.0);
+            const pitchRate = Math.pow(2, (slice.pitch || 0) / 12);
+            const granularStretch = durationMultiplier * pitchRate;
+
+            // Apply Granular Synthesis Time Stretch
+            if (Math.abs(granularStretch - 1.0) > 0.01) {
+                const grainSize = 0.05; // 50ms grains
+                const grainSamples = Math.floor(sampleRate * grainSize);
+                const hopIn = Math.floor(grainSamples * 0.25);
+                const hopOut = Math.floor(hopIn * granularStretch);
+                
+                const outLength = Math.floor(length * granularStretch);
+                const outData = [];
+                
+                const window = new Float32Array(grainSamples);
+                for(let i=0; i<grainSamples; i++) {
+                    window[i] = (0.5 * (1 - Math.cos((2 * Math.PI * i) / (grainSamples - 1)))) * 0.5; // Normalized Hann window
+                }
+
+                for (let c=0; c<audioBuffer.numberOfChannels; c++) {
+                    const inChannel = sliceData[c];
+                    const outChannel = new Float32Array(outLength);
+                    
+                    let inPos = 0;
+                    let outPos = 0;
+                    
+                    while (inPos + grainSamples < length && outPos + grainSamples < outLength) {
+                        for (let i = 0; i < grainSamples; i++) {
+                            outChannel[outPos + i] += inChannel[inPos + i] * window[i];
+                        }
+                        inPos += hopIn;
+                        outPos += hopOut;
+                    }
+                    outData.push(outChannel);
+                }
+                sliceData = outData;
+            }
+
+            const finalLength = sliceData[0].length;
+            if (finalLength === 0) return;
+            
+            const finalBuffer = audioCtx.createBuffer(audioBuffer.numberOfChannels, finalLength, sampleRate);
+            for (let c=0; c<audioBuffer.numberOfChannels; c++) {
+                finalBuffer.getChannelData(c).set(sliceData[c]);
+            }
+            
+            slice.processedBuffer = finalBuffer;
+        }
+
+        async function autoChop() {
+            if (!audioBuffer) return;
+            
+            const bpm = parseFloat(bpmInput.value) || 120;
+            const beatDuration = 60 / bpm;
+            const totalDuration = audioBuffer.duration;
+            
+            slices = [];
+            let currentTime = 0;
+            
+            for (let i = 0; i < 16; i++) {
+                if (currentTime >= totalDuration) break;
+                
+                const end = Math.min(currentTime + beatDuration, totalDuration);
+                const slice = {
+                    id: `slice-${i}`,
+                    start: currentTime,
+                    end: end,
+                    key: PAD_KEYS[i],
+                    padIndex: i,
+                    pitch: 0,
+                    speed: 1.0,
+                    reverse: false,
+                    attack: 0.01,
+                    release: 0.1,
+                    playMode: 'choke', // Default to choke
+                    chokeGroup: 1,     // Default to group 1
+                    processedBuffer: null
+                };
+                slices.push(slice);
+                await processSliceBuffer(slice); // Pre-generate buffer
+                
+                currentTime += beatDuration;
+                
+                const padEl = document.getElementById(`pad-${i}`);
+                if (padEl) {
+                    padEl.classList.remove('bg-neutral-800');
+                    padEl.classList.add('bg-neutral-700');
+                    padEl.style.borderColor = '#f97316';
+                }
+            }
+
+            for(let i = slices.length; i < 16; i++){
+                const padEl = document.getElementById(`pad-${i}`);
+                if (padEl) {
+                    padEl.classList.add('bg-neutral-800');
+                    padEl.classList.remove('bg-neutral-700');
+                    padEl.style.borderColor = ''; 
+                }
+            }
+            
+            drawWaveform();
+            selectPad(0); 
+        }
+
+        autoChopBtn.addEventListener('click', async () => { 
+            if(audioBuffer) {
+                autoChopBtn.innerText = 'Choping...';
+                await autoChop();
+                autoChopBtn.innerText = 'Chop to Pads';
+            }
+        });
+
+        // --- Playback Engine (Envelopes, Pitch & Choke) ---
+
+        function stopAllAudio() {
+            activeSources.forEach(active => { try { active.source.stop(); } catch(e) {} });
+            activeSources = [];
+        }
+
+        stopBtn.addEventListener('click', stopAllAudio);
+
+        function playSlice(slice, when = 0, isSeqPlay = false, seqIndex = -1) {
+            if (!audioCtx || (!slice.processedBuffer && !audioBuffer)) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            // CHOKE GROUPS: Stop only sounds in the same choke group
+            if (slice.playMode === 'choke') {
+                activeSources = activeSources.filter(active => {
+                    if (active.mode === 'choke' && active.chokeGroup === slice.chokeGroup) {
+                        try { active.source.stop(); } catch(e) {}
+                        return false; // Remove from tracking array
+                    }
+                    return true;
+                });
+            }
+
+            const source = audioCtx.createBufferSource();
+            const gainNode = audioCtx.createGain();
+            
+            source.buffer = slice.processedBuffer || audioBuffer;
+
+            // Pitch shift (playbackRate)
+            const semitones = slice.pitch || 0;
+            const playbackRate = Math.pow(2, semitones / 12);
+            source.playbackRate.value = playbackRate;
+
+            // Envelopes (Attack & Release)
+            const attack = parseFloat(slice.attack) || 0.01;
+            const release = parseFloat(slice.release) || 0.1;
+            
+            // Actual physical duration factors in speed AND pitch
+            const actualDuration = slice.processedBuffer 
+                ? slice.processedBuffer.duration / playbackRate 
+                : (slice.end - slice.start) / playbackRate;
+            
+            const playTime = when === 0 ? audioCtx.currentTime : when;
+
+            // Define Envelope schedule
+            gainNode.gain.setValueAtTime(0, playTime);
+            gainNode.gain.linearRampToValueAtTime(1, playTime + attack);
+            gainNode.gain.setValueAtTime(1, Math.max(playTime + attack, playTime + actualDuration - release));
+            gainNode.gain.linearRampToValueAtTime(0, playTime + actualDuration);
+            
+            source.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            gainNode.connect(streamDestination); // Route to the performance recorder
+            
+            if (slice.processedBuffer) {
+                source.start(playTime, 0); // Play full processed buffer
+            } else {
+                source.start(playTime, slice.start, slice.end - slice.start); // Fallback
+            }
+            
+            // Track the source with its metadata for choke functionality
+            activeSources.push({
+                source: source,
+                padIndex: slice.padIndex,
+                chokeGroup: slice.chokeGroup,
+                mode: slice.playMode
+            });
+
+            // Clean up memory when source finishes naturally
+            source.onended = () => {
+                activeSources = activeSources.filter(s => s.source !== source);
+            };
+
+            // UI Highlight Scheduling
+            const uiTimeDelay = when === 0 ? 0 : (when - audioCtx.currentTime) * 1000;
+            
+            setTimeout(() => {
+                animatePad(slice.padIndex);
+                currentlyPlayingSlice = slice.padIndex;
+                drawWaveform();
+                
+                // Sequencer block highlight
+                if (isSeqPlay && seqIndex > -1) {
+                    document.querySelectorAll('.seq-block').forEach(b => b.classList.replace('bg-orange-500', 'bg-neutral-700'));
+                    const block = document.getElementById(`seq-block-${seqIndex}`);
+                    if (block) block.classList.replace('bg-neutral-700', 'bg-orange-500');
+                }
+
+                // Cleanup visual highlights after slice ends
+                setTimeout(() => {
+                    if (currentlyPlayingSlice === slice.padIndex && !isSequencerPlaying) {
+                        currentlyPlayingSlice = null; 
+                        drawWaveform();
+                    }
+                }, actualDuration * 1000);
+
+            }, Math.max(0, uiTimeDelay));
+        }
+
+        // --- Interaction & Editor logic ---
+
+        function animatePad(index) {
+            const padEl = document.getElementById(`pad-${index}`);
+            if (!padEl) return;
+            padEl.classList.add('pad-active');
+            setTimeout(() => padEl.classList.remove('pad-active'), 100);
+        }
+
+        function selectPad(index) {
+            selectedPadIndex = index;
+            const slice = slices.find(s => s.padIndex === index);
+            
+            if (slice) {
+                editorEmpty.classList.add('hidden');
+                editorControls.classList.remove('hidden');
+                editorControls.classList.add('flex');
+                
+                editPadKey.innerText = slice.key;
+                editStartInput.value = slice.start.toFixed(3);
+                editEndInput.value = slice.end.toFixed(3);
+                
+                document.getElementById('edit-pitch').value = slice.pitch || 0;
+                document.getElementById('val-pitch').innerText = `${slice.pitch > 0 ? '+' : ''}${slice.pitch || 0} st`;
+                document.getElementById('edit-speed').value = slice.speed || 1.0;
+                document.getElementById('val-speed').innerText = `${(slice.speed || 1.0).toFixed(2)}x`;
+                document.getElementById('edit-attack').value = slice.attack || 0.01;
+                document.getElementById('val-attack').innerText = `${slice.attack || 0.01}s`;
+                document.getElementById('edit-release').value = slice.release || 0.1;
+                document.getElementById('val-release').innerText = `${slice.release || 0.1}s`;
+
+                // Update Play Mode & Choke UI
+                editPlaymode.value = slice.playMode || 'choke';
+                editChokegroup.value = slice.chokeGroup || 1;
+                editChokegroup.disabled = (slice.playMode === 'oneshot');
+                editChokegroup.classList.toggle('opacity-50', slice.playMode === 'oneshot');
+
+                reverseBtn.innerText = `Rev: ${slice.reverse ? 'ON' : 'OFF'}`;
+                if (slice.reverse) {
+                    reverseBtn.classList.replace('bg-neutral-700', 'bg-orange-700');
+                    reverseBtn.classList.replace('border-neutral-600', 'border-orange-600');
+                } else {
+                    reverseBtn.classList.replace('bg-orange-700', 'bg-neutral-700');
+                    reverseBtn.classList.replace('border-orange-600', 'border-neutral-600');
+                }
+            } else {
+                editorEmpty.classList.remove('hidden');
+                editorControls.classList.add('hidden');
+                editorControls.classList.remove('flex');
+            }
+            drawWaveform();
+        }
+
+        function handlePadTrigger(index) {
+            initAudio(); 
+            selectPad(index);
+            const slice = slices.find(s => s.padIndex === index);
+            if (slice) {
+                playSlice(slice);
+                
+                // Add to visual sequence if recording
+                if (isRecordingSeq) {
+                    sequence.push(index);
+                    renderSequence();
+                }
+            }
+        }
+
+        // Editor Sliders Events
+        const attachSlider = (id, prop, unit, isBufferProp) => {
+            const input = document.getElementById(`edit-${id}`);
+            input.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                document.getElementById(`val-${id}`).innerText = `${val > 0 && id === 'pitch' ? '+' : ''}${val.toFixed(id === 'pitch' ? 0 : 2)}${unit}`;
+                if (!isBufferProp && selectedPadIndex !== null) {
+                    slices.find(s => s.padIndex === selectedPadIndex)[prop] = val;
+                }
+            });
+            // Buffer-altering properties (Pitch & Speed) generate new audio on mouse release
+            if (isBufferProp) {
+                input.addEventListener('change', async (e) => {
+                    if (selectedPadIndex !== null) {
+                        const slice = slices.find(s => s.padIndex === selectedPadIndex);
+                        slice[prop] = parseFloat(e.target.value);
+                        await processSliceBuffer(slice);
+                    }
+                });
+            }
+        };
+        attachSlider('pitch', 'pitch', ' st', true);
+        attachSlider('speed', 'speed', 'x', true);
+        attachSlider('attack', 'attack', 's', false);
+        attachSlider('release', 'release', 's', false);
+
+        // Play Mode Events
+        editPlaymode.addEventListener('change', (e) => {
+            if (selectedPadIndex !== null) {
+                const slice = slices.find(s => s.padIndex === selectedPadIndex);
+                slice.playMode = e.target.value;
+                editChokegroup.disabled = (slice.playMode === 'oneshot');
+                editChokegroup.classList.toggle('opacity-50', slice.playMode === 'oneshot');
+            }
+        });
+
+        editChokegroup.addEventListener('change', (e) => {
+            if (selectedPadIndex !== null) {
+                slices.find(s => s.padIndex === selectedPadIndex).chokeGroup = parseInt(e.target.value);
+            }
+        });
+
+        reverseBtn.addEventListener('click', async (e) => {
+            if (selectedPadIndex === null) return;
+            const slice = slices.find(s => s.padIndex === selectedPadIndex);
+            slice.reverse = !slice.reverse;
+            e.target.innerText = `Rev: ${slice.reverse ? 'ON' : 'OFF'}`;
+            if (slice.reverse) {
+                e.target.classList.replace('bg-neutral-700', 'bg-orange-700');
+                e.target.classList.replace('border-neutral-600', 'border-orange-600');
+            } else {
+                e.target.classList.replace('bg-orange-700', 'bg-neutral-700');
+                e.target.classList.replace('border-orange-600', 'border-neutral-600');
+            }
+            await processSliceBuffer(slice);
+        });
+
+        applyEditBtn.addEventListener('click', async () => {
+            if (selectedPadIndex === null || !audioBuffer) return;
+            const slice = slices.find(s => s.padIndex === selectedPadIndex);
+            if (slice) {
+                const newStart = Math.max(0, parseFloat(editStartInput.value));
+                const newEnd = Math.min(audioBuffer.duration, parseFloat(editEndInput.value));
+                if (newStart < newEnd) { 
+                    slice.start = newStart; 
+                    slice.end = newEnd; 
+                    drawWaveform(); 
+                    await processSliceBuffer(slice);
+                } 
+                else { alert("Start point must be before End point."); }
+            }
+        });
+
+        window.addEventListener('keydown', (e) => {
+            // Only ignore key presses if we are actively typing in a text or number box
+            if (e.target.tagName === 'INPUT' && (e.target.type === 'text' || e.target.type === 'number')) return;
+            
+            const padIndex = PAD_KEYS.indexOf(e.key.toUpperCase());
+            if (padIndex !== -1 && !e.repeat) {
+                e.preventDefault(); // Prevents default browser actions when hitting keys
+                handlePadTrigger(padIndex);
+            }
+        });
+
+        // --- Visual Remix Sequencer Logic ---
+        
+        function renderSequence() {
+            const track = document.getElementById('sequence-track');
+            const emptyText = document.getElementById('seq-empty-text');
+            
+            if (sequence.length === 0) {
+                emptyText.style.display = 'flex';
+                Array.from(track.children).forEach(c => { if(c.id !== 'seq-empty-text') c.remove() });
+            } else {
+                emptyText.style.display = 'none';
+                Array.from(track.children).forEach(c => { if(c.id !== 'seq-empty-text') c.remove() });
+                sequence.forEach((padIdx, i) => {
+                    const block = document.createElement('div');
+                    block.className = `seq-block flex-shrink-0 w-10 h-10 rounded bg-neutral-700 border border-neutral-600 flex items-center justify-center text-sm font-bold text-neutral-300 transition-colors shadow`;
+                    block.id = `seq-block-${i}`;
+                    block.innerText = PAD_KEYS[padIdx];
+                    track.appendChild(block);
+                });
+                // Auto scroll
+                track.scrollLeft = track.scrollWidth;
+            }
+        }
+
+        document.getElementById('btn-record-seq').addEventListener('click', (e) => {
+            isRecordingSeq = !isRecordingSeq;
+            e.target.classList.toggle('bg-red-600', isRecordingSeq);
+            e.target.classList.toggle('text-white', isRecordingSeq);
+            e.target.classList.toggle('animate-pulse', isRecordingSeq);
+        });
+
+        document.getElementById('btn-clear-seq').addEventListener('click', () => { sequence = []; renderSequence(); });
+
+        document.getElementById('btn-gen-remix').addEventListener('click', () => {
+            if (slices.length === 0) return;
+            sequence = [];
+            const numSteps = Math.floor(Math.random() * 8) + 8; // 8 to 16 steps
+            for(let i=0; i<numSteps; i++) {
+                sequence.push(slices[Math.floor(Math.random() * slices.length)].padIndex);
+            }
+            renderSequence();
+        });
+
+        playSequenceBtn.addEventListener('click', () => {
+            if (!audioCtx || sequence.length === 0 || isSequencerPlaying) return;
+            initAudio(); stopAllAudio();
+            
+            isSequencerPlaying = true;
+            let scheduleTime = audioCtx.currentTime + 0.1;
+            
+            sequence.forEach((padIdx, i) => {
+                const slice = slices.find(s => s.padIndex === padIdx);
+                if (slice && slice.processedBuffer) {
+                    playSlice(slice, scheduleTime, true, i);
+                    const pbRate = Math.pow(2, (slice.pitch || 0) / 12);
+                    scheduleTime += slice.processedBuffer.duration / pbRate; // Advance by physical duration
+                }
+            });
+            
+            // Clean up visual state when sequence ends
+            setTimeout(() => {
+                isSequencerPlaying = false;
+                currentlyPlayingSlice = null;
+                drawWaveform();
+                document.querySelectorAll('.seq-block').forEach(b => b.classList.replace('bg-orange-500', 'bg-neutral-700'));
+            }, (scheduleTime - audioCtx.currentTime) * 1000);
+        });
+
+        // --- MIDI Integration ---
+        if (navigator.requestMIDIAccess) navigator.requestMIDIAccess().then(onMIDISuccess, onMIDIFailure);
+
+        function onMIDISuccess(midiAccess) {
+            const status = document.getElementById('midi-status');
+            status.innerText = 'MIDI: Connected';
+            status.classList.replace('text-neutral-400', 'text-green-400');
+            status.classList.replace('border-neutral-700', 'border-green-800');
+
+            for (var input of midiAccess.inputs.values()) input.onmidimessage = getMIDIMessage;
+            midiAccess.onstatechange = (e) => {
+                 if(e.port.state === 'disconnected') {
+                     let hasInputs = false;
+                     for (var i of midiAccess.inputs.values()) hasInputs = true;
+                     if(!hasInputs) {
+                        status.innerText = 'MIDI: Disconnected';
+                        status.classList.replace('text-green-400', 'text-neutral-400');
+                        status.classList.replace('border-green-800', 'border-neutral-700');
+                     }
+                 }
+            }
+        }
+
+        function onMIDIFailure() { console.log('Could not access MIDI.'); }
+
+        function getMIDIMessage(message) {
+            const command = message.data[0];
+            const note = message.data[1];
+            const velocity = (message.data.length > 2) ? message.data[2] : 0; 
+            if (command === 144 && velocity > 0) {
+                const padIndex = note - MIDI_START_NOTE;
+                if (padIndex >= 0 && padIndex < 16) handlePadTrigger(padIndex);
+            }
+        }
+
+        // --- Performance Recording Logic (MP3 via Lamejs) ---
+        let mp3Encoder;
+        let processorNode;
+        let micSource;
+        let silentGainNode;
+        let isRecordingPerf = false;
+
+        recordPerfBtn.addEventListener('click', () => {
+            if (!audioCtx) initAudio();
+
+            if (isRecordingPerf) {
+                // Stop Recording
+                isRecordingPerf = false;
+                
+                const mp3buf = mp3Encoder.flush();
+                if (mp3buf.length > 0) recordedChunks.push(new Int8Array(mp3buf));
+
+                processorNode.disconnect();
+                micSource.disconnect();
+                silentGainNode.disconnect();
+
+                const blob = new Blob(recordedChunks, { type: 'audio/mp3' });
+                const url = URL.createObjectURL(blob);
+                downloadPerfBtn.href = url;
+                
+                // Format filename with Date and Time
+                const now = new Date();
+                const pad = n => n.toString().padStart(2, '0');
+                const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+                const timeStr = `${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+                downloadPerfBtn.download = `${dateStr}_${timeStr}-remix.mp3`;
+                
+                recordPerfBtn.innerHTML = '<span class="w-2 h-2 rounded-full bg-red-500"></span> Record';
+                recordPerfBtn.classList.replace('bg-red-600', 'bg-red-900/50');
+                recordPerfBtn.classList.remove('animate-pulse');
+                
+                downloadPerfBtn.classList.remove('hidden');
+                downloadPerfBtn.classList.add('flex');
+            } else {
+                // Start Recording
+                isRecordingPerf = true;
+                recordedChunks = [];
+                
+                // Initialize lamejs MP3 Encoder (Mono, Context Sample Rate, 128kbps)
+                const sampleRate = audioCtx.sampleRate;
+                mp3Encoder = new lamejs.Mp3Encoder(1, sampleRate, 128); 
+
+                micSource = audioCtx.createMediaStreamSource(streamDestination.stream);
+                processorNode = audioCtx.createScriptProcessor(4096, 1, 1);
+                
+                // We route the processor to a silent node to drive the audio processing 
+                // engine without causing a feedback loop in your speakers.
+                silentGainNode = audioCtx.createGain();
+                silentGainNode.gain.value = 0;
+
+                processorNode.onaudioprocess = (e) => {
+                    if (!isRecordingPerf) return;
+                    const channelData = e.inputBuffer.getChannelData(0);
+                    const sampleBlock = new Int16Array(channelData.length);
+                    for (let i = 0; i < channelData.length; i++) {
+                        // Clamp and convert Float32 [-1, 1] to Int16 [-32768, 32767]
+                        let s = Math.max(-1, Math.min(1, channelData[i]));
+                        sampleBlock[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                    }
+                    const mp3buf = mp3Encoder.encodeBuffer(sampleBlock);
+                    if (mp3buf.length > 0) recordedChunks.push(new Int8Array(mp3buf));
+                };
+
+                micSource.connect(processorNode);
+                processorNode.connect(silentGainNode);
+                silentGainNode.connect(audioCtx.destination);
+                
+                recordPerfBtn.innerHTML = '<span class="w-2 h-2 rounded-sm bg-white"></span> Stop';
+                recordPerfBtn.classList.replace('bg-red-900/50', 'bg-red-600');
+                recordPerfBtn.classList.add('animate-pulse');
+                downloadPerfBtn.classList.add('hidden');
+                downloadPerfBtn.classList.remove('flex');
+            }
+        });
+
+        window.addEventListener('resize', () => { drawWaveform(); });
+        initPads();
+    </script>
+</body>
+</html>
