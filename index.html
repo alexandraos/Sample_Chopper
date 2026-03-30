@@ -38,34 +38,34 @@
 <body class="bg-neutral-900 text-neutral-200 font-sans h-screen flex flex-col overflow-hidden">
 
     <!-- Top Navigation / Header -->
-    <header class="bg-neutral-950 p-4 border-b border-neutral-800 flex justify-between items-center shadow-md z-20">
-        <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center font-bold text-white shadow-lg">C</div>
-            <h1 class="text-xl font-semibold tracking-wider text-white uppercase">Web Sample Chopper</h1>
+    <header class="bg-neutral-950 p-3 md:p-4 border-b border-neutral-800 flex flex-wrap justify-between items-center shadow-md z-20 gap-2">
+        <div class="flex items-center gap-2">
+            <div class="w-7 h-7 md:w-8 md:h-8 rounded bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center font-bold text-white shadow-lg text-sm md:text-base">C</div>
+            <h1 class="text-lg md:text-xl font-semibold tracking-wider text-white uppercase hidden sm:block">Sample Chopper</h1>
         </div>
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2 md:gap-4 flex-1 justify-end">
             <!-- Recording Controls -->
-            <div class="flex items-center gap-2 border-r border-neutral-700 pr-4">
-                <button id="btn-record-perf" class="bg-red-900/50 hover:bg-red-600 border border-red-800 text-white text-sm py-2 px-4 rounded transition-colors flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-red-500"></span> Record
+            <div class="flex items-center gap-2 border-r border-neutral-700 pr-2 md:pr-4">
+                <button id="btn-record-perf" class="bg-red-900/50 hover:bg-red-600 border border-red-800 text-white text-xs md:text-sm py-1.5 md:py-2 px-2 md:px-4 rounded transition-colors flex items-center gap-1.5 whitespace-nowrap">
+                    <span class="w-2 h-2 rounded-full bg-red-500"></span> <span class="hidden sm:inline">Record</span>
                 </button>
-                <a id="btn-download-perf" class="hidden bg-green-700 hover:bg-green-600 border border-green-800 text-white text-sm py-2 px-4 rounded transition-colors items-center gap-2 cursor-pointer">
-                    ⬇️ Export
+                <a id="btn-download-perf" class="hidden bg-green-700 hover:bg-green-600 border border-green-800 text-white text-xs md:text-sm py-1.5 md:py-2 px-2 md:px-4 rounded transition-colors items-center gap-1.5 cursor-pointer whitespace-nowrap">
+                    ⬇️ <span class="hidden sm:inline">Export</span>
                 </a>
             </div>
 
-            <label class="bg-neutral-800 hover:bg-neutral-700 text-sm py-2 px-4 rounded cursor-pointer transition-colors border border-neutral-700 whitespace-nowrap">
-                Load Sample (MP3/WAV)
+            <label class="bg-neutral-800 hover:bg-neutral-700 text-xs md:text-sm py-1.5 md:py-2 px-2 md:px-4 rounded cursor-pointer transition-colors border border-neutral-700 whitespace-nowrap">
+                <span class="hidden sm:inline">Load Sample</span>
+                <span class="sm:hidden">📂</span>
                 <input type="file" id="audio-upload" accept="audio/*" class="hidden">
             </label>
-            <button id="btn-record-sample" class="bg-red-900/50 hover:bg-red-600 border border-red-800 text-white text-sm py-2 px-4 rounded transition-colors flex items-center gap-2 whitespace-nowrap">
-                <span class="w-2 h-2 rounded-full bg-red-500"></span> Sample Recorder
+            <button id="btn-record-sample" class="bg-red-900/50 hover:bg-red-600 border border-red-800 text-white text-xs md:text-sm py-1.5 md:py-2 px-2 md:px-4 rounded transition-colors flex items-center gap-1.5 whitespace-nowrap">
+                <span class="w-2 h-2 rounded-full bg-red-500"></span> <span class="hidden sm:inline">System Audio</span><span class="sm:hidden">🎙️</span>
             </button>
-            <div id="midi-status" class="text-xs px-2 py-1 rounded bg-neutral-800 border border-neutral-700 text-neutral-400">MIDI: Disconnected</div>
+            <div id="midi-status" class="text-[10px] md:text-xs px-1.5 py-1 rounded bg-neutral-800 border border-neutral-700 text-neutral-400 hidden lg:block">MIDI: Off</div>
             
             <!-- Instructions Bubble -->
-            <div class="relative group ml-2">
-                <button class="w-8 h-8 rounded-full border-2 border-neutral-600 flex items-center justify-center text-neutral-400 hover:text-white hover:border-white transition-colors bg-neutral-800">
+            <div class="relative group ml-1">
                     <span class="font-serif italic font-bold">i</span>
                 </button>
                 
@@ -92,12 +92,12 @@
         
         <!-- Waveform Viewer -->
         <div class="w-full h-48 bg-neutral-950 rounded-lg border border-neutral-800 relative shadow-inner flex-shrink-0 group overflow-hidden">
-            <canvas id="waveform-canvas" class="w-full h-full absolute top-0 left-0 cursor-grab"></canvas>
+            <canvas id="waveform-canvas" class="w-full h-full absolute top-0 left-0 cursor-grab" style="touch-action: none;"></canvas>
             <div id="waveform-overlay" class="w-full h-full absolute top-0 left-0 pointer-events-none"></div>
             
             <!-- UX Hint Overlay -->
             <div class="absolute top-2 right-2 bg-black/70 border border-neutral-700 text-neutral-400 text-[10px] px-2 py-1 rounded pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity shadow-lg backdrop-blur-sm">
-                Scroll to Zoom • Click & Drag to Pan • Dbl-Click to Reset
+                Scroll/Pinch to Zoom • Drag to Pan • Dbl-Click to Reset
             </div>
 
             <!-- Empty State -->
@@ -107,140 +107,151 @@
         </div>
 
         <!-- Toolbar: Grid & Sequencing -->
-        <div class="flex flex-col md:flex-row gap-4 flex-shrink-0">
+        <div class="flex flex-col gap-3 flex-shrink-0">
             <!-- Beatgrid Controls -->
-            <div class="bg-neutral-800 rounded-lg p-4 border border-neutral-700 flex-1 flex flex-col justify-between">
-                <h2 class="text-xs font-bold text-neutral-400 uppercase mb-2 tracking-wider">Auto Chop (Beatgrid)</h2>
-                <div class="flex items-end gap-3">
-                    <div class="flex flex-col">
-                        <label class="text-xs text-neutral-500 mb-1">Sample BPM</label>
-                        <input type="text" id="bpm-input" value="120" class="bg-neutral-900 border border-neutral-700 text-white p-2 rounded w-24 text-center font-mono">
+            <div class="bg-neutral-800 rounded-lg p-3 border border-neutral-700 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-bold text-neutral-400 uppercase tracking-wider hidden sm:inline">Auto Chop</span>
+                    <div class="flex items-center gap-2">
+                        <label class="text-[10px] text-neutral-500 uppercase">BPM</label>
+                        <input type="number" id="bpm-input" value="120" class="bg-neutral-900 border border-neutral-700 text-white p-1 rounded w-16 text-center font-mono text-sm">
                     </div>
-                    <button id="btn-autochop" class="bg-orange-600 hover:bg-orange-500 text-white font-medium py-2 px-4 rounded transition-colors shadow-lg">
+                </div>
+                <div class="flex gap-2">
+                    <button id="btn-autochop" class="bg-orange-600 hover:bg-orange-500 text-white font-medium py-1.5 px-3 md:px-4 rounded transition-colors shadow-lg text-xs md:text-sm whitespace-nowrap">
                         Chop to Pads
                     </button>
-                    <button id="btn-stop" class="bg-red-900/50 hover:bg-red-600 border border-red-800 text-white font-medium py-2 px-4 rounded transition-colors ml-auto">
+                    <button id="btn-stop" class="bg-red-900/50 hover:bg-red-600 border border-red-800 text-white font-medium py-1.5 px-3 md:px-4 rounded transition-colors text-xs md:text-sm whitespace-nowrap">
                         Stop Audio
                     </button>
                 </div>
             </div>
-
-            <!-- Visual Remix Sequencer -->
-            <div class="bg-neutral-800 rounded-lg p-4 border border-neutral-700 flex-[2] flex flex-col justify-between">
-                <div class="flex justify-between items-center mb-2">
-                    <h2 class="text-xs font-bold text-neutral-400 uppercase tracking-wider">Remix Sequencer</h2>
-                    <div class="flex gap-2">
-                        <button id="btn-record-seq" class="bg-red-900/50 hover:bg-red-600 text-white text-xs py-1 px-3 rounded transition-colors border border-red-800 font-bold uppercase">Rec</button>
-                        <button id="btn-clear-seq" class="bg-neutral-700 hover:bg-neutral-600 text-white text-xs py-1 px-3 rounded transition-colors">Clear</button>
-                    </div>
-                </div>
-                <div class="flex flex-col gap-2">
-                    <div id="sequence-track" class="flex gap-1 overflow-x-auto p-2 bg-neutral-900 border border-neutral-700 rounded h-16 items-center shadow-inner relative scroll-smooth">
-                        <span id="seq-empty-text" class="text-neutral-600 text-xs italic absolute inset-0 flex items-center justify-center pointer-events-none">Hit REC and press pads, or generate a remix...</span>
-                    </div>
-                    <div class="flex items-center justify-between mt-1">
-                        <button id="btn-gen-remix" class="text-xs text-orange-400 hover:text-orange-300 transition-colors font-medium">✨ Auto-Remix</button>
-                        <button id="btn-play-sequence" class="bg-orange-600 hover:bg-orange-500 text-white font-medium py-1 px-6 rounded transition-colors text-sm shadow-md">
-                            ▶ Play Sequence
-                        </button>
-                    </div>
-                </div>
-            </div>
         </div>
 
-        <!-- Lower Section: Truncation Editor & Pads -->
-        <div class="flex flex-col lg:flex-row gap-4 flex-1 min-h-[300px]">
+        <!-- Lower Section: Pads & Editors -->
+        <div class="flex flex-col lg:flex-row gap-4 flex-none pb-8">
             
-            <!-- Truncation / Slice Editor -->
-            <div class="bg-neutral-800 rounded-lg p-3 border border-neutral-700 w-full lg:w-64 flex flex-col overflow-y-auto max-h-[500px]">
-                <h2 class="text-xs font-bold text-neutral-400 uppercase mb-3 tracking-wider flex-shrink-0">Slice Editor</h2>
-                <div id="editor-empty" class="text-sm text-neutral-500 italic flex-1 flex items-center justify-center text-center">
-                    Click a pad to select a slice. Drag markers on waveform to adjust.
-                </div>
-                <div id="editor-controls" class="hidden flex-col gap-2 flex-shrink-0">
-                    <div class="flex justify-between items-center bg-neutral-900 p-2 rounded">
-                        <span class="text-xs font-bold text-neutral-500">SELECTED PAD</span>
-                        <span id="edit-pad-key" class="font-mono text-orange-500 font-bold">-</span>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-2">
-                        <div class="flex flex-col gap-1">
-                            <label class="text-[10px] text-neutral-400 uppercase">Start (s)</label>
-                            <input type="number" id="edit-start" step="0.001" min="0" class="bg-neutral-900 border border-neutral-700 p-1.5 rounded font-mono text-xs w-full">
-                        </div>
-                        <div class="flex flex-col gap-1">
-                            <label class="text-[10px] text-neutral-400 uppercase">End (s)</label>
-                            <input type="number" id="edit-end" step="0.001" min="0" class="bg-neutral-900 border border-neutral-700 p-1.5 rounded font-mono text-xs w-full">
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-x-3 gap-y-2 mt-2 bg-neutral-900/50 p-2 rounded border border-neutral-700/50">
-                        <div class="flex flex-col gap-1 col-span-1">
-                            <div class="flex justify-between">
-                                <label class="text-[10px] text-neutral-400 uppercase">Pitch</label>
-                                <span id="val-pitch" class="text-[10px] text-orange-400 font-mono">0 st</span>
-                            </div>
-                            <input type="range" id="edit-pitch" min="-12" max="12" step="1" value="0" class="w-full h-1 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-orange-500">
-                        </div>
-                        <div class="flex flex-col gap-1 col-span-1">
-                            <div class="flex justify-between">
-                                <label class="text-[10px] text-neutral-400 uppercase">Speed</label>
-                                <span id="val-speed" class="text-[10px] text-orange-400 font-mono">1.00x</span>
-                            </div>
-                            <input type="range" id="edit-speed" min="0.25" max="4" step="0.05" value="1" class="w-full h-1 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-orange-500">
-                        </div>
-                        <div class="flex flex-col gap-1">
-                            <div class="flex justify-between">
-                                <label class="text-[10px] text-neutral-400 uppercase">Attack</label>
-                                <span id="val-attack" class="text-[10px] text-orange-400 font-mono">0.01s</span>
-                            </div>
-                            <input type="range" id="edit-attack" min="0" max="1" step="0.01" value="0.01" class="w-full h-1 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-orange-500">
-                        </div>
-                        <div class="flex flex-col gap-1">
-                            <div class="flex justify-between">
-                                <label class="text-[10px] text-neutral-400 uppercase">Release</label>
-                                <span id="val-release" class="text-[10px] text-orange-400 font-mono">0.10s</span>
-                            </div>
-                            <input type="range" id="edit-release" min="0" max="2" step="0.01" value="0.1" class="w-full h-1 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-orange-500">
-                        </div>
-                    </div>
-
-                    <!-- Play Mode & Choke Groups -->
-                    <div class="grid grid-cols-2 gap-x-3 bg-neutral-900/50 p-2 rounded border border-neutral-700/50 mt-2">
-                        <div class="flex flex-col gap-1">
-                            <label class="text-[10px] text-neutral-400 uppercase">Play Mode</label>
-                            <select id="edit-playmode" class="bg-neutral-800 border border-neutral-700 text-xs p-1 rounded text-white outline-none focus:border-orange-500">
-                                <option value="choke">Choke Group</option>
-                                <option value="oneshot">One-Shot</option>
-                            </select>
-                        </div>
-                        <div class="flex flex-col gap-1">
-                            <label class="text-[10px] text-neutral-400 uppercase">Group ID</label>
-                            <select id="edit-chokegroup" class="bg-neutral-800 border border-neutral-700 text-xs p-1 rounded text-white outline-none focus:border-orange-500 transition-opacity disabled:cursor-not-allowed">
-                                <option value="1">Group 1</option>
-                                <option value="2">Group 2</option>
-                                <option value="3">Group 3</option>
-                                <option value="4">Group 4</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-2 mt-2">
-                        <button id="btn-reverse" class="flex-1 bg-neutral-700 hover:bg-neutral-600 py-1.5 rounded text-[10px] uppercase font-bold transition-colors border border-neutral-600">
-                            Rev: OFF
-                        </button>
-                        <button id="btn-apply-edit" class="flex-1 bg-neutral-700 hover:bg-neutral-600 py-1.5 rounded text-[10px] uppercase font-bold transition-colors border border-neutral-600">
-                            Apply Times
-                        </button>
-                    </div>
+            <!-- 16 Pads (4x4 Grid) - Top on Mobile, Right on Desktop -->
+            <div class="order-1 lg:order-2 bg-neutral-950 border border-neutral-800 rounded-lg p-3 flex-1 flex items-center justify-center shadow-inner min-h-[320px]">
+                <div id="pads-container" class="grid grid-cols-4 grid-rows-4 gap-2 w-full h-full max-w-[500px] max-h-[500px] mx-auto aspect-square">
+                    <!-- Pads will be generated here -->
                 </div>
             </div>
 
-            <!-- 16 Pads (4x4 Grid) -->
-            <div class="bg-neutral-950 border border-neutral-800 rounded-lg p-3 flex-1 flex items-center justify-center shadow-inner min-h-[300px]">
-                <div id="pads-container" class="grid grid-cols-4 grid-rows-4 gap-2 w-full h-full max-w-[500px] max-h-[500px] mx-auto">
-                    <!-- Pads will be generated here -->
+            <!-- Left / Bottom Column: Slice Editor & Sequencer -->
+            <div class="order-2 lg:order-1 w-full lg:w-64 flex flex-col gap-4 flex-none">
+                
+                <!-- Truncation / Slice Editor -->
+                <div class="bg-neutral-800 rounded-lg p-3 border border-neutral-700 flex flex-col w-full">
+                    <h2 class="text-xs font-bold text-neutral-400 uppercase mb-3 tracking-wider flex-none">Slice Editor</h2>
+                    <div id="editor-empty" class="text-sm text-neutral-500 italic py-10 flex items-center justify-center text-center">
+                        Click a pad to select a slice. Drag markers on waveform to adjust.
+                    </div>
+                    <div id="editor-controls" class="hidden flex-col gap-2">
+                        <div class="flex flex-wrap md:flex-nowrap lg:flex-wrap justify-between items-center bg-neutral-900 p-2 rounded gap-2">
+                            <div class="flex justify-between items-center w-full md:w-auto lg:w-full">
+                                <span class="text-[10px] md:text-xs font-bold text-neutral-500">SELECTED PAD</span>
+                                <span id="edit-pad-key" class="font-mono text-orange-500 font-bold ml-auto md:ml-2 lg:ml-auto">-</span>
+                            </div>
+                            <div class="flex gap-2 w-full md:w-auto lg:w-full">
+                                <div class="flex flex-col gap-1 flex-1">
+                                    <label class="text-[10px] text-neutral-400 uppercase">Start (s)</label>
+                                    <input type="number" id="edit-start" step="0.001" min="0" class="bg-neutral-950 border border-neutral-700 p-1.5 rounded font-mono text-xs w-full">
+                                </div>
+                                <div class="flex flex-col gap-1 flex-1">
+                                    <label class="text-[10px] text-neutral-400 uppercase">End (s)</label>
+                                    <input type="number" id="edit-end" step="0.001" min="0" class="bg-neutral-950 border border-neutral-700 p-1.5 rounded font-mono text-xs w-full">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-2 gap-x-3 gap-y-2 mt-1 bg-neutral-900/50 p-2 rounded border border-neutral-700/50">
+                            <div class="flex flex-col gap-1 col-span-1">
+                                <div class="flex justify-between">
+                                    <label class="text-[10px] text-neutral-400 uppercase">Pitch</label>
+                                    <span id="val-pitch" class="text-[10px] text-orange-400 font-mono">0 st</span>
+                                </div>
+                                <input type="range" id="edit-pitch" min="-12" max="12" step="1" value="0" class="w-full h-1 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-orange-500">
+                            </div>
+                            <div class="flex flex-col gap-1 col-span-1">
+                                <div class="flex justify-between">
+                                    <label class="text-[10px] text-neutral-400 uppercase">Speed</label>
+                                    <span id="val-speed" class="text-[10px] text-orange-400 font-mono">1.00x</span>
+                                </div>
+                                <input type="range" id="edit-speed" min="0.25" max="4" step="0.05" value="1" class="w-full h-1 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-orange-500">
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <div class="flex justify-between">
+                                    <label class="text-[10px] text-neutral-400 uppercase">Attack</label>
+                                    <span id="val-attack" class="text-[10px] text-orange-400 font-mono">0.01s</span>
+                                </div>
+                                <input type="range" id="edit-attack" min="0" max="1" step="0.01" value="0.01" class="w-full h-1 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-orange-500">
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <div class="flex justify-between">
+                                    <label class="text-[10px] text-neutral-400 uppercase">Release</label>
+                                    <span id="val-release" class="text-[10px] text-orange-400 font-mono">0.10s</span>
+                                </div>
+                                <input type="range" id="edit-release" min="0" max="2" step="0.01" value="0.1" class="w-full h-1 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-orange-500">
+                            </div>
+                        </div>
+
+                        <!-- Modes & Actions -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-2 gap-2 mt-1">
+                            <div class="flex flex-col gap-1">
+                                <label class="text-[10px] text-neutral-400 uppercase">Play Mode</label>
+                                <select id="edit-playmode" class="bg-neutral-800 border border-neutral-700 text-xs p-1 rounded text-white outline-none focus:border-orange-500 h-[26px]">
+                                    <option value="choke">Choke Group</option>
+                                    <option value="oneshot">One-Shot</option>
+                                </select>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <label class="text-[10px] text-neutral-400 uppercase">Group ID</label>
+                                <select id="edit-chokegroup" class="bg-neutral-800 border border-neutral-700 text-xs p-1 rounded text-white outline-none focus:border-orange-500 transition-opacity disabled:cursor-not-allowed h-[26px]">
+                                    <option value="1">Group 1</option>
+                                    <option value="2">Group 2</option>
+                                    <option value="3">Group 3</option>
+                                    <option value="4">Group 4</option>
+                                </select>
+                            </div>
+                            <button id="btn-reverse" class="bg-neutral-700 hover:bg-neutral-600 py-1.5 rounded text-[10px] uppercase font-bold transition-colors border border-neutral-600 w-full mt-auto h-[26px]">
+                                Rev: OFF
+                            </button>
+                            <button id="btn-apply-edit" class="bg-neutral-700 hover:bg-neutral-600 py-1.5 rounded text-[10px] uppercase font-bold transition-colors border border-neutral-600 w-full mt-auto h-[26px]">
+                                Apply Times
+                            </button>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- Visual Remix Sequencer (Collapsible) -->
+                <details class="bg-neutral-800 rounded-lg border border-neutral-700 group flex-none">
+                    <summary class="text-xs font-bold text-neutral-400 uppercase tracking-wider p-3 cursor-pointer list-none flex justify-between items-center outline-none hover:bg-neutral-700/50 transition-colors rounded-lg">
+                        <span class="flex items-center gap-2">✨ Remix Sequencer</span>
+                        <span class="text-lg group-open:rotate-180 transition-transform leading-none">▾</span>
+                    </summary>
+                    <div class="p-3 pt-0 border-t border-neutral-700 flex flex-col gap-2 mt-2">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-[10px] text-neutral-500 hidden sm:inline">Record a pattern or generate one automatically.</span>
+                            <div class="flex gap-2 ml-auto">
+                                <button id="btn-record-seq" class="bg-red-900/50 hover:bg-red-600 text-white text-[10px] py-1 px-3 rounded transition-colors border border-red-800 font-bold uppercase">Rec</button>
+                                <button id="btn-clear-seq" class="bg-neutral-700 hover:bg-neutral-600 text-white text-[10px] py-1 px-3 rounded transition-colors">Clear</button>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <div id="sequence-track" class="flex gap-1 overflow-x-auto p-2 bg-neutral-900 border border-neutral-700 rounded h-14 items-center shadow-inner relative scroll-smooth">
+                                <span id="seq-empty-text" class="text-neutral-600 text-[10px] italic absolute inset-0 flex items-center justify-center pointer-events-none">Hit REC and press pads, or generate a remix...</span>
+                            </div>
+                            <div class="flex items-center justify-between mt-1">
+                                <button id="btn-gen-remix" class="text-[10px] text-orange-400 hover:text-orange-300 transition-colors font-medium">✨ Auto-Remix</button>
+                                <button id="btn-play-sequence" class="bg-orange-600 hover:bg-orange-500 text-white font-medium py-1 px-4 rounded transition-colors text-[10px] uppercase font-bold shadow-md">
+                                    ▶ Play Sequence
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+
             </div>
         </div>
 
@@ -270,6 +281,12 @@
         let pan = 0; // left edge offset in seconds
         let isPanning = false;
         let lastPanX = 0;
+        
+        // Multi-touch Zoom State
+        let isPinching = false;
+        let initialPinchDistance = null;
+        let initialZoom = 1;
+        let pinchCenterTime = 0;
 
         // Configuration
         const PAD_KEYS = ['1','2','3','4','Q','W','E','R','A','S','D','F','Z','X','C','V'];
@@ -330,7 +347,10 @@
 
                 pad.appendChild(label);
                 pad.appendChild(midiHint);
-                pad.addEventListener('mousedown', () => handlePadTrigger(index));
+                
+                // Mouse & Touch support mapped properly
+                pad.addEventListener('mousedown', (e) => { e.preventDefault(); handlePadTrigger(index); });
+                pad.addEventListener('touchstart', (e) => { e.preventDefault(); handlePadTrigger(index); }, {passive: false});
                 
                 padsContainer.appendChild(pad);
             });
@@ -532,10 +552,27 @@
         }
 
         // Viewport Utility
+        function getClientX(e) {
+            return e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
+        }
+
         function getTimeAtCursor(e) {
             const rect = canvas.getBoundingClientRect();
+            const clientX = getClientX(e);
             const visibleDuration = audioBuffer.duration / zoom;
-            return pan + ((e.clientX - rect.left) / canvas.width) * visibleDuration;
+            return pan + ((clientX - rect.left) / canvas.width) * visibleDuration;
+        }
+
+        // Pinch Zoom Utilities
+        function getPinchDistance(e) {
+            return Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
+        }
+
+        function getPinchCenter(e) {
+            return (e.touches[0].clientX + e.touches[1].clientX) / 2;
         }
 
         // Canvas Interaction Events (Zoom, Pan, Drag & Drop markers)
@@ -562,17 +599,36 @@
             drawWaveform();
         });
 
-        canvas.addEventListener('dblclick', () => {
-            // Reset View
-            zoom = 1; pan = 0;
-            drawWaveform();
-        });
-
-        canvas.addEventListener('mousemove', (e) => {
+        const handleCanvasMove = (e) => {
             if (!audioBuffer) return;
+
+            // Handle Multi-touch Pinch Zoom
+            if (e.touches && e.touches.length === 2) {
+                if (!isPinching) return;
+                if (e.cancelable) e.preventDefault();
+
+                const currentDistance = getPinchDistance(e);
+                const ratio = currentDistance / initialPinchDistance;
+
+                zoom = initialZoom * ratio;
+                zoom = Math.max(1, Math.min(zoom, 500));
+
+                const rect = canvas.getBoundingClientRect();
+                const centerX = getPinchCenter(e) - rect.left;
+                const visibleDurationAfter = audioBuffer.duration / zoom;
+
+                // Adjust pan to keep zoom centered on the pinch location
+                pan = pinchCenterTime - (centerX / canvas.width) * visibleDurationAfter;
+                pan = Math.max(0, Math.min(pan, audioBuffer.duration - visibleDurationAfter));
+
+                drawWaveform();
+                return;
+            }
+
             const timeAtCursor = getTimeAtCursor(e);
             
             if (isDraggingMarker && selectedPadIndex !== null) {
+                if (e.cancelable) e.preventDefault(); // Prevent mobile scroll while dragging
                 const slice = slices.find(s => s.padIndex === selectedPadIndex);
                 if (dragTarget === 'start') {
                     slice.start = Math.max(0, Math.min(timeAtCursor, slice.end - 0.001));
@@ -583,13 +639,15 @@
                 }
                 drawWaveform();
             } else if (isPanning) {
-                const deltaX = e.clientX - lastPanX;
+                if (e.cancelable) e.preventDefault(); // Prevent mobile scroll while panning
+                const clientX = getClientX(e);
+                const deltaX = clientX - lastPanX;
                 const visibleDuration = audioBuffer.duration / zoom;
                 const timeDelta = (deltaX / canvas.width) * visibleDuration;
                 
                 pan -= timeDelta;
                 pan = Math.max(0, Math.min(pan, audioBuffer.duration - visibleDuration));
-                lastPanX = e.clientX;
+                lastPanX = clientX;
                 drawWaveform();
             } else {
                 // Hover detection logic to change cursor style
@@ -597,7 +655,7 @@
                 if (selectedPadIndex !== null) {
                     const slice = slices.find(s => s.padIndex === selectedPadIndex);
                     const visibleDuration = audioBuffer.duration / zoom;
-                    const timeTolerance = (8 / canvas.width) * visibleDuration; // 8 pixels converted to time
+                    const timeTolerance = (8 / canvas.width) * visibleDuration; 
                     
                     if (Math.abs(slice.start - timeAtCursor) < timeTolerance || Math.abs(slice.end - timeAtCursor) < timeTolerance) {
                         canvas.style.cursor = 'ew-resize';
@@ -608,17 +666,30 @@
                     canvas.style.cursor = zoom > 1 ? 'grab' : 'crosshair';
                 }
             }
-        });
+        };
 
-        canvas.addEventListener('mousedown', (e) => {
+        const handleCanvasDown = (e) => {
             if (!audioBuffer) return;
+
+            // Initialize Multi-touch Pinch
+            if (e.touches && e.touches.length === 2) {
+                isPinching = true;
+                initialPinchDistance = getPinchDistance(e);
+                initialZoom = zoom;
+                const rect = canvas.getBoundingClientRect();
+                const centerX = getPinchCenter(e) - rect.left;
+                const visibleDuration = audioBuffer.duration / zoom;
+                pinchCenterTime = pan + (centerX / canvas.width) * visibleDuration;
+                return;
+            }
+
             const timeAtCursor = getTimeAtCursor(e);
             let targetFound = false;
             
             if (selectedPadIndex !== null) {
                 const slice = slices.find(s => s.padIndex === selectedPadIndex);
                 const visibleDuration = audioBuffer.duration / zoom;
-                const timeTolerance = (8 / canvas.width) * visibleDuration;
+                const timeTolerance = (12 / canvas.width) * visibleDuration; // Larger touch area threshold
                 
                 if (Math.abs(slice.start - timeAtCursor) < timeTolerance) {
                     isDraggingMarker = true; dragTarget = 'start'; targetFound = true;
@@ -629,12 +700,22 @@
 
             if (!targetFound) {
                 isPanning = true;
-                lastPanX = e.clientX;
+                lastPanX = getClientX(e);
                 canvas.style.cursor = 'grabbing';
             }
-        });
+        };
 
-        window.addEventListener('mouseup', async () => {
+        const handleCanvasUp = async (e) => {
+            // Handle releasing a pinch safely
+            if (e && e.touches && e.touches.length < 2) {
+                isPinching = false;
+            }
+            if (e && e.touches && e.touches.length === 1) {
+                // Keep the remaining finger smoothly ready for panning without jumping
+                lastPanX = e.touches[0].clientX;
+                return; 
+            }
+
             const wasDragging = isDraggingMarker;
             isDraggingMarker = false;
             dragTarget = null;
@@ -647,7 +728,20 @@
                 const slice = slices.find(s => s.padIndex === selectedPadIndex);
                 await processSliceBuffer(slice);
             }
-        });
+        };
+
+        // Attach Mouse & Touch listeners for Canvas
+        canvas.addEventListener('mousemove', handleCanvasMove);
+        canvas.addEventListener('touchmove', handleCanvasMove, {passive: false});
+        
+        canvas.addEventListener('mousedown', handleCanvasDown);
+        canvas.addEventListener('touchstart', (e) => { 
+            if (e.cancelable) e.preventDefault(); 
+            handleCanvasDown(e); 
+        }, {passive: false});
+
+        window.addEventListener('mouseup', handleCanvasUp);
+        window.addEventListener('touchend', handleCanvasUp);
 
         // --- Slicing Logic ---
 
