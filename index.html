@@ -54,10 +54,13 @@
                 </a>
             </div>
 
-            <label class="bg-neutral-800 hover:bg-neutral-700 text-sm py-2 px-4 rounded cursor-pointer transition-colors border border-neutral-700">
+            <label class="bg-neutral-800 hover:bg-neutral-700 text-sm py-2 px-4 rounded cursor-pointer transition-colors border border-neutral-700 whitespace-nowrap">
                 Load Sample (MP3/WAV)
                 <input type="file" id="audio-upload" accept="audio/*" class="hidden">
             </label>
+            <button id="btn-record-sample" class="bg-red-900/50 hover:bg-red-600 border border-red-800 text-white text-sm py-2 px-4 rounded transition-colors flex items-center gap-2 whitespace-nowrap">
+                <span class="w-2 h-2 rounded-full bg-red-500"></span> Sample Recorder
+            </button>
             <div id="midi-status" class="text-xs px-2 py-1 rounded bg-neutral-800 border border-neutral-700 text-neutral-400">MIDI: Disconnected</div>
             
             <!-- Instructions Bubble -->
@@ -73,7 +76,7 @@
                     
                     <h3 class="text-white font-bold mb-3 text-base border-b border-neutral-700 pb-2 relative z-10">How to Use</h3>
                     <ul class="list-disc pl-4 space-y-2 relative z-10">
-                        <li><strong class="text-orange-400">Load:</strong> Upload an audio file. The BPM is automatically detected.</li>
+                        <li><strong class="text-orange-400">Load:</strong> Upload an audio file or record system audio. The BPM is automatically detected.</li>
                         <li><strong class="text-orange-400">Chop:</strong> Splits the audio into 16 beat-synced slices across the pads.</li>
                         <li><strong class="text-orange-400">Play:</strong> Use your computer keyboard (1-4, Q-R, A-F, Z-V) or a MIDI controller.</li>
                         <li><strong class="text-orange-400">Edit:</strong> Click a pad, then drag markers on the waveform to fine-tune its timing. Adjust Pitch & Speed in the editor.</li>
@@ -286,6 +289,7 @@
         // Recording Elements
         const recordPerfBtn = document.getElementById('btn-record-perf');
         const downloadPerfBtn = document.getElementById('btn-download-perf');
+        const recordSampleBtn = document.getElementById('btn-record-sample');
         
         // Editor Elements
         const editorEmpty = document.getElementById('editor-empty');
@@ -1214,6 +1218,89 @@
                 recordPerfBtn.classList.add('animate-pulse');
                 downloadPerfBtn.classList.add('hidden');
                 downloadPerfBtn.classList.remove('flex');
+            }
+        });
+
+        // --- Sample Recording Logic (System Audio) ---
+        let sampleRecorder;
+        let sampleChunks = [];
+        let sampleStream;
+        let isRecordingSample = false;
+
+        recordSampleBtn.addEventListener('click', async () => {
+            if (!audioCtx) initAudio();
+
+            if (isRecordingSample) {
+                // Stop recording
+                isRecordingSample = false;
+                if (sampleRecorder && sampleRecorder.state === 'recording') {
+                    sampleRecorder.stop();
+                }
+                if (sampleStream) {
+                    sampleStream.getTracks().forEach(track => track.stop());
+                }
+                
+                recordSampleBtn.innerHTML = '<span class="w-2 h-2 rounded-full bg-red-500"></span> Sample Recorder';
+                recordSampleBtn.classList.replace('bg-red-600', 'bg-red-900/50');
+                recordSampleBtn.classList.remove('animate-pulse');
+            } else {
+                // Start recording
+                try {
+                    // Ask for display media (system audio)
+                    sampleStream = await navigator.mediaDevices.getDisplayMedia({ 
+                        video: true, // Required by browsers to prompt screen share UI
+                        audio: true 
+                    });
+
+                    if (sampleStream.getAudioTracks().length === 0) {
+                        alert("No audio track detected! Please make sure to toggle 'Share audio' or 'Share system audio' when selecting a tab or screen.");
+                        sampleStream.getTracks().forEach(track => track.stop());
+                        return;
+                    }
+                    
+                    sampleChunks = [];
+                    sampleRecorder = new MediaRecorder(sampleStream);
+                    
+                    sampleRecorder.ondataavailable = e => {
+                        if (e.data.size > 0) sampleChunks.push(e.data);
+                    };
+                    
+                    sampleRecorder.onstop = async () => {
+                        const blob = new Blob(sampleChunks, { type: sampleRecorder.mimeType });
+                        const arrayBuffer = await blob.arrayBuffer();
+                        try {
+                            audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                            slices = []; 
+                            zoom = 1; 
+                            pan = 0;
+                            emptyState.style.display = 'none';
+                            drawWaveform();
+                            await detectBPM(audioBuffer);
+                            autoChop();
+                        } catch (err) {
+                            alert("Error decoding recorded audio.");
+                            console.error(err);
+                        }
+                    };
+                    
+                    sampleRecorder.start();
+                    isRecordingSample = true;
+                    
+                    recordSampleBtn.innerHTML = '<span class="w-2 h-2 rounded-sm bg-white"></span> Stop Recording';
+                    recordSampleBtn.classList.replace('bg-red-900/50', 'bg-red-600');
+                    recordSampleBtn.classList.add('animate-pulse');
+
+                    // Handle user stopping screen share via native browser UI "Stop sharing" button
+                    sampleStream.getVideoTracks()[0].onended = () => {
+                        if (isRecordingSample) recordSampleBtn.click();
+                    };
+
+                } catch (err) {
+                    console.error("Error accessing media devices.", err);
+                    if (err.name !== 'NotAllowedError') {
+                        alert("Could not access system audio. Please ensure you grant permission and check 'Share audio' if prompted.");
+                    }
+                }
             }
         });
 
