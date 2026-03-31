@@ -33,6 +33,14 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #737373; 
         }
+        
+        /* Vertical Sliders for Mixer */
+        input[type=range][orient=vertical] {
+            appearance: slider-vertical;
+            -webkit-appearance: slider-vertical;
+            width: 8px;
+            height: 100%;
+        }
     </style>
 </head>
 <body class="bg-neutral-900 text-neutral-200 font-sans h-screen flex flex-col overflow-hidden">
@@ -44,6 +52,16 @@
             <h1 class="text-lg md:text-xl font-semibold tracking-wider text-white uppercase hidden sm:block">Sample Chopper</h1>
         </div>
         <div class="flex items-center gap-2 md:gap-4 flex-1 justify-end">
+            <!-- Global Transport Controls -->
+            <div class="flex items-center gap-1 border-r border-neutral-700 pr-2 md:pr-4">
+                <button id="btn-metro" class="bg-neutral-800 border border-neutral-700 hover:bg-neutral-700 text-neutral-400 font-bold py-1.5 px-2 rounded text-[10px] md:text-xs transition-colors flex-shrink-0" title="Metronome">🎛️<span class="hidden xl:inline ml-1">Metro</span></button>
+                <button id="btn-rec-pattern" class="bg-red-900/50 hover:bg-red-600 text-white font-bold py-1.5 px-2 rounded text-[10px] md:text-xs uppercase transition-colors border border-red-800 flex-shrink-0" title="Record Pattern">⏺<span class="hidden xl:inline ml-1">Rec</span></button>
+                <button id="btn-stop-pattern" class="bg-neutral-700 hover:bg-neutral-600 text-white font-bold py-1.5 px-2 rounded text-[10px] md:text-xs uppercase transition-colors border border-neutral-600 flex-shrink-0" title="Stop">⏹</button>
+                <button id="btn-pause-pattern" class="bg-neutral-700 hover:bg-neutral-600 text-white font-bold py-1.5 px-2 rounded text-[10px] md:text-xs uppercase transition-colors border border-neutral-600 flex-shrink-0" title="Pause">⏸</button>
+                <button id="btn-play-pattern" class="bg-orange-700 hover:bg-orange-600 text-white font-bold py-1.5 px-2 rounded text-[10px] md:text-xs uppercase transition-colors flex-shrink-0" title="Play Pattern">▶<span class="hidden lg:inline ml-1">Pat</span></button>
+                <button id="btn-play-song" class="bg-green-700 hover:bg-green-600 text-white font-bold py-1.5 px-2 rounded text-[10px] md:text-xs uppercase transition-colors flex-shrink-0" title="Play Song">▶<span class="hidden lg:inline ml-1">Song</span></button>
+            </div>
+
             <!-- Recording Controls -->
             <div class="flex items-center gap-2 border-r border-neutral-700 pr-2 md:pr-4">
                 <button id="btn-record-perf" class="bg-red-900/50 hover:bg-red-600 border border-red-800 text-white text-xs md:text-sm py-1.5 md:py-2 px-2 md:px-4 rounded transition-colors flex items-center gap-1.5 whitespace-nowrap">
@@ -66,21 +84,22 @@
             
             <!-- Instructions Bubble -->
             <div class="relative group ml-1">
+                <button class="w-8 h-8 rounded-full border-2 border-neutral-600 flex items-center justify-center text-neutral-400 hover:text-white hover:border-white transition-colors bg-neutral-800">
                     <span class="font-serif italic font-bold">i</span>
                 </button>
                 
                 <!-- Bubble Content -->
                 <div class="absolute right-0 top-full mt-4 w-80 bg-neutral-800 border border-neutral-600 rounded-lg shadow-2xl p-5 text-sm text-neutral-300 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
-                    <!-- Triangle pointer -->
                     <div class="absolute -top-2 right-3 w-4 h-4 bg-neutral-800 border-t border-l border-neutral-600 transform rotate-45"></div>
-                    
                     <h3 class="text-white font-bold mb-3 text-base border-b border-neutral-700 pb-2 relative z-10">How to Use</h3>
                     <ul class="list-disc pl-4 space-y-2 relative z-10">
-                        <li><strong class="text-orange-400">Load:</strong> Upload an audio file or record system audio. The BPM is automatically detected.</li>
-                        <li><strong class="text-orange-400">Chop:</strong> Splits the audio into 16 beat-synced slices across the pads.</li>
-                        <li><strong class="text-orange-400">Play:</strong> Use your computer keyboard (1-4, Q-R, A-F, Z-V) or a MIDI controller.</li>
-                        <li><strong class="text-orange-400">Edit:</strong> Click a pad, then drag markers on the waveform to fine-tune its timing. Adjust Pitch & Speed in the editor.</li>
-                        <li><strong class="text-orange-400">Record:</strong> Capture your live performance and export it as an MP3!</li>
+                        <li><strong class="text-orange-400">Banks:</strong> Switch between Banks A-D to load different sounds.</li>
+                        <li><strong class="text-orange-400">Load & Chop:</strong> Upload an audio file. The BPM is automatically detected. It chops into 16 pads.</li>
+                        <li><strong class="text-orange-400">Edit:</strong> Click a pad, drag markers to adjust timing, or edit pitch/speed in the Sampler tab.</li>
+                        <li><strong class="text-orange-400">Sequence:</strong> Open the Arranger tab. Create 1-4 bar patterns. Hit REC PAT to record pads in real-time, perfectly quantized to the 16th note grid!</li>
+                        <li><strong class="text-orange-400">Song:</strong> Paint patterns onto the 32-bar timeline to build a full track.</li>
+                        <li><strong class="text-orange-400">Mix:</strong> Use the Mixer tab to balance levels and mute different banks.</li>
+                        <li><strong class="text-orange-400">Record:</strong> Capture your live pad drumming or full song playback directly to an MP3.</li>
                     </ul>
                 </div>
             </div>
@@ -95,20 +114,17 @@
             <canvas id="waveform-canvas" class="w-full h-full absolute top-0 left-0 cursor-grab" style="touch-action: none;"></canvas>
             <div id="waveform-overlay" class="w-full h-full absolute top-0 left-0 pointer-events-none"></div>
             
-            <!-- UX Hint Overlay -->
             <div class="absolute top-2 right-2 bg-black/70 border border-neutral-700 text-neutral-400 text-[10px] px-2 py-1 rounded pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity shadow-lg backdrop-blur-sm">
                 Scroll/Pinch to Zoom • Drag to Pan • Dbl-Click to Reset
             </div>
 
-            <!-- Empty State -->
             <div id="empty-state" class="absolute inset-0 flex items-center justify-center text-neutral-600 pointer-events-none">
-                Please load a sample to begin
+                Please load a sample into this bank to begin
             </div>
         </div>
 
         <!-- Toolbar: Grid & Sequencing -->
         <div class="flex flex-col gap-3 flex-shrink-0">
-            <!-- Beatgrid Controls -->
             <div class="bg-neutral-800 rounded-lg p-3 border border-neutral-700 flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center gap-3">
                     <span class="text-xs font-bold text-neutral-400 uppercase tracking-wider hidden sm:inline">Auto Chop</span>
@@ -128,20 +144,33 @@
             </div>
         </div>
 
-        <!-- Lower Section: Pads & Editors -->
-        <div class="flex flex-col lg:flex-row gap-4 flex-none pb-8">
+        <!-- View Tabs & Bank Selector -->
+        <div class="flex gap-4 border-b border-neutral-800 pb-2 px-2 flex-none items-center">
+            <div class="flex gap-4">
+                <button id="tab-sampler" class="text-orange-500 font-bold border-b-2 border-orange-500 pb-1 text-sm uppercase tracking-wider transition-colors outline-none">Sampler</button>
+                <button id="tab-arranger" class="text-neutral-500 font-bold border-b-2 border-transparent pb-1 text-sm uppercase tracking-wider hover:text-neutral-300 transition-colors outline-none">Arranger</button>
+                <button id="tab-mixer" class="text-neutral-500 font-bold border-b-2 border-transparent pb-1 text-sm uppercase tracking-wider hover:text-neutral-300 transition-colors outline-none">Mixer</button>
+            </div>
+            <div class="ml-auto flex items-center gap-1 bg-neutral-900 rounded p-1 border border-neutral-800">
+                <span class="text-[10px] font-bold text-neutral-500 uppercase px-1 hidden sm:block">Bank</span>
+                <button class="bank-btn w-6 h-6 md:w-7 md:h-7 rounded bg-orange-600 text-white text-xs font-bold transition-colors shadow-inner" data-bank="0">A</button>
+                <button class="bank-btn w-6 h-6 md:w-7 md:h-7 rounded bg-neutral-800 text-neutral-400 text-xs font-bold hover:bg-neutral-700 transition-colors" data-bank="1">B</button>
+                <button class="bank-btn w-6 h-6 md:w-7 md:h-7 rounded bg-neutral-800 text-neutral-400 text-xs font-bold hover:bg-neutral-700 transition-colors" data-bank="2">C</button>
+                <button class="bank-btn w-6 h-6 md:w-7 md:h-7 rounded bg-neutral-800 text-neutral-400 text-xs font-bold hover:bg-neutral-700 transition-colors" data-bank="3">D</button>
+            </div>
+        </div>
+
+        <!-- SAMPLER VIEW -->
+        <div id="view-sampler" class="flex flex-col lg:flex-row gap-4 flex-none pb-8">
             
-            <!-- 16 Pads (4x4 Grid) - Top on Mobile, Right on Desktop -->
             <div class="order-1 lg:order-2 bg-neutral-950 border border-neutral-800 rounded-lg p-3 flex-1 flex items-center justify-center shadow-inner min-h-[320px]">
                 <div id="pads-container" class="grid grid-cols-4 grid-rows-4 gap-2 w-full h-full max-w-[500px] max-h-[500px] mx-auto aspect-square">
                     <!-- Pads will be generated here -->
                 </div>
             </div>
 
-            <!-- Left / Bottom Column: Slice Editor & Sequencer -->
+            <!-- Slice Editor -->
             <div class="order-2 lg:order-1 w-full lg:w-64 flex flex-col gap-4 flex-none">
-                
-                <!-- Truncation / Slice Editor -->
                 <div class="bg-neutral-800 rounded-lg p-3 border border-neutral-700 flex flex-col w-full">
                     <h2 class="text-xs font-bold text-neutral-400 uppercase mb-3 tracking-wider flex-none">Slice Editor</h2>
                     <div id="editor-empty" class="text-sm text-neutral-500 italic py-10 flex items-center justify-center text-center">
@@ -180,6 +209,13 @@
                                 </div>
                                 <input type="range" id="edit-speed" min="0.25" max="4" step="0.05" value="1" class="w-full h-1 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-orange-500">
                             </div>
+                            <div class="flex flex-col gap-1 col-span-1">
+                                <div class="flex justify-between">
+                                    <label class="text-[10px] text-neutral-400 uppercase">Volume</label>
+                                    <span id="val-volume" class="text-[10px] text-orange-400 font-mono">1.00</span>
+                                </div>
+                                <input type="range" id="edit-volume" min="0" max="2" step="0.05" value="1" class="w-full h-1 bg-neutral-700 rounded-lg appearance-none cursor-pointer accent-orange-500">
+                            </div>
                             <div class="flex flex-col gap-1">
                                 <div class="flex justify-between">
                                     <label class="text-[10px] text-neutral-400 uppercase">Attack</label>
@@ -196,7 +232,6 @@
                             </div>
                         </div>
 
-                        <!-- Modes & Actions -->
                         <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-2 gap-2 mt-1">
                             <div class="flex flex-col gap-1">
                                 <label class="text-[10px] text-neutral-400 uppercase">Play Mode</label>
@@ -223,34 +258,106 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <!-- Visual Remix Sequencer (Collapsible) -->
-                <details class="bg-neutral-800 rounded-lg border border-neutral-700 group flex-none">
-                    <summary class="text-xs font-bold text-neutral-400 uppercase tracking-wider p-3 cursor-pointer list-none flex justify-between items-center outline-none hover:bg-neutral-700/50 transition-colors rounded-lg">
-                        <span class="flex items-center gap-2">✨ Remix Sequencer</span>
-                        <span class="text-lg group-open:rotate-180 transition-transform leading-none">▾</span>
-                    </summary>
-                    <div class="p-3 pt-0 border-t border-neutral-700 flex flex-col gap-2 mt-2">
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="text-[10px] text-neutral-500 hidden sm:inline">Record a pattern or generate one automatically.</span>
-                            <div class="flex gap-2 ml-auto">
-                                <button id="btn-record-seq" class="bg-red-900/50 hover:bg-red-600 text-white text-[10px] py-1 px-3 rounded transition-colors border border-red-800 font-bold uppercase">Rec</button>
-                                <button id="btn-clear-seq" class="bg-neutral-700 hover:bg-neutral-600 text-white text-[10px] py-1 px-3 rounded transition-colors">Clear</button>
-                            </div>
-                        </div>
-                        <div class="flex flex-col gap-2">
-                            <div id="sequence-track" class="flex gap-1 overflow-x-auto p-2 bg-neutral-900 border border-neutral-700 rounded h-14 items-center shadow-inner relative scroll-smooth">
-                                <span id="seq-empty-text" class="text-neutral-600 text-[10px] italic absolute inset-0 flex items-center justify-center pointer-events-none">Hit REC and press pads, or generate a remix...</span>
-                            </div>
-                            <div class="flex items-center justify-between mt-1">
-                                <button id="btn-gen-remix" class="text-[10px] text-orange-400 hover:text-orange-300 transition-colors font-medium">✨ Auto-Remix</button>
-                                <button id="btn-play-sequence" class="bg-orange-600 hover:bg-orange-500 text-white font-medium py-1 px-4 rounded transition-colors text-[10px] uppercase font-bold shadow-md">
-                                    ▶ Play Sequence
-                                </button>
-                            </div>
-                        </div>
+        <!-- ARRANGER VIEW -->
+        <div id="view-arranger" class="hidden flex-col gap-4 flex-none pb-8 min-h-[300px]">
+            
+            <!-- Pattern Bank & Transport -->
+            <div class="bg-neutral-800 rounded-lg p-3 border border-neutral-700 flex justify-between items-center gap-3">
+                <div class="flex items-center gap-2 overflow-x-auto w-full">
+                    <h2 class="text-xs font-bold text-neutral-400 uppercase tracking-wider flex-shrink-0">Patterns (Bank <span id="pat-bank-label">A</span>)</h2>
+                    <div id="pattern-bank" class="flex gap-1"></div>
+                    <button id="btn-new-pattern" class="bg-neutral-700 hover:bg-neutral-600 text-[10px] py-1.5 px-3 rounded text-white font-bold transition-colors shadow border border-neutral-600 flex-shrink-0">+ New</button>
+                </div>
+            </div>
+
+            <!-- Pattern Editor (TR-808 Style) -->
+            <div class="bg-neutral-800 rounded-lg p-3 border border-neutral-700 flex flex-col gap-2 overflow-x-auto relative">
+                <div class="flex items-center justify-between mb-2 min-w-[500px] gap-2">
+                    <h2 class="text-xs font-bold text-neutral-400 uppercase tracking-wider whitespace-nowrap">Step Sequencer (16th Notes)</h2>
+                    <div class="flex items-center gap-2">
+                        <select id="pat-length-select" class="bg-neutral-900 border border-neutral-700 text-[10px] p-1 rounded text-white outline-none focus:border-orange-500 font-bold uppercase">
+                            <option value="1">1 Bar</option>
+                            <option value="2">2 Bars</option>
+                            <option value="3">3 Bars</option>
+                            <option value="4">4 Bars</option>
+                        </select>
+                        <span id="current-pattern-label" class="text-[10px] text-orange-400 font-bold bg-orange-900/40 px-2 py-0.5 rounded border border-orange-700 uppercase whitespace-nowrap">Pattern 1</span>
                     </div>
-                </details>
+                </div>
+                <div id="step-sequencer" class="flex flex-col gap-1 min-w-[500px]">
+                    <!-- Generated via JS -->
+                </div>
+            </div>
+
+            <!-- Song Arranger Grid -->
+            <div class="bg-neutral-800 rounded-lg p-3 border border-neutral-700 flex flex-col flex-1">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-xs font-bold text-neutral-400 uppercase tracking-wider">Song Arranger (32 Bars)</h2>
+                    <span class="text-[10px] text-neutral-500 italic hidden md:inline">Click a slot to toggle through patterns for that Bank.</span>
+                </div>
+                <div id="arranger-grid" class="flex flex-col gap-1.5 p-2 bg-neutral-900 border border-neutral-700 rounded shadow-inner overflow-x-auto min-h-[120px]">
+                    <!-- 4 rows generated via JS -->
+                </div>
+                <div class="mt-3 flex justify-end items-center">
+                    <button id="btn-clear-song" class="text-neutral-500 hover:text-white text-[10px] uppercase font-bold transition-colors">Clear Song</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MIXER VIEW -->
+        <div id="view-mixer" class="hidden flex-row gap-4 flex-none pb-8 items-center md:items-stretch justify-center h-full min-h-[400px]">
+            <div class="bg-neutral-800 rounded-lg p-6 border border-neutral-700 flex gap-6 md:gap-12 justify-center overflow-x-auto w-full md:w-auto h-full items-center shadow-2xl">
+                
+                <!-- Bank A -->
+                <div class="flex flex-col items-center gap-4 h-full py-4">
+                    <span class="text-xs font-bold text-neutral-400 uppercase tracking-wider bg-neutral-900 px-3 py-1 rounded border border-neutral-700">Bank A</span>
+                    <div class="flex-1 relative flex justify-center min-h-[150px] w-full items-center">
+                        <input type="range" orient="vertical" id="vol-bank-0" min="0" max="1.5" step="0.01" value="1" class="absolute bg-neutral-900 rounded-lg outline-none accent-orange-500 cursor-pointer shadow-inner">
+                    </div>
+                    <button id="mute-bank-0" class="w-12 h-10 rounded bg-neutral-700 border border-neutral-600 text-[10px] font-bold text-white hover:bg-neutral-600 transition-colors shadow-md mt-2">MUTE</button>
+                </div>
+                
+                <!-- Bank B -->
+                <div class="flex flex-col items-center gap-4 h-full py-4">
+                    <span class="text-xs font-bold text-neutral-400 uppercase tracking-wider bg-neutral-900 px-3 py-1 rounded border border-neutral-700">Bank B</span>
+                    <div class="flex-1 relative flex justify-center min-h-[150px] w-full items-center">
+                        <input type="range" orient="vertical" id="vol-bank-1" min="0" max="1.5" step="0.01" value="1" class="absolute bg-neutral-900 rounded-lg outline-none accent-orange-500 cursor-pointer shadow-inner">
+                    </div>
+                    <button id="mute-bank-1" class="w-12 h-10 rounded bg-neutral-700 border border-neutral-600 text-[10px] font-bold text-white hover:bg-neutral-600 transition-colors shadow-md mt-2">MUTE</button>
+                </div>
+
+                <!-- Bank C -->
+                <div class="flex flex-col items-center gap-4 h-full py-4">
+                    <span class="text-xs font-bold text-neutral-400 uppercase tracking-wider bg-neutral-900 px-3 py-1 rounded border border-neutral-700">Bank C</span>
+                    <div class="flex-1 relative flex justify-center min-h-[150px] w-full items-center">
+                        <input type="range" orient="vertical" id="vol-bank-2" min="0" max="1.5" step="0.01" value="1" class="absolute bg-neutral-900 rounded-lg outline-none accent-orange-500 cursor-pointer shadow-inner">
+                    </div>
+                    <button id="mute-bank-2" class="w-12 h-10 rounded bg-neutral-700 border border-neutral-600 text-[10px] font-bold text-white hover:bg-neutral-600 transition-colors shadow-md mt-2">MUTE</button>
+                </div>
+
+                <!-- Bank D -->
+                <div class="flex flex-col items-center gap-4 h-full py-4">
+                    <span class="text-xs font-bold text-neutral-400 uppercase tracking-wider bg-neutral-900 px-3 py-1 rounded border border-neutral-700">Bank D</span>
+                    <div class="flex-1 relative flex justify-center min-h-[150px] w-full items-center">
+                        <input type="range" orient="vertical" id="vol-bank-3" min="0" max="1.5" step="0.01" value="1" class="absolute bg-neutral-900 rounded-lg outline-none accent-orange-500 cursor-pointer shadow-inner">
+                    </div>
+                    <button id="mute-bank-3" class="w-12 h-10 rounded bg-neutral-700 border border-neutral-600 text-[10px] font-bold text-white hover:bg-neutral-600 transition-colors shadow-md mt-2">MUTE</button>
+                </div>
+
+                <!-- Separator -->
+                <div class="w-px bg-neutral-700 hidden md:block h-3/4 mx-2"></div>
+                
+                <!-- Master -->
+                <div class="flex flex-col items-center gap-4 h-full py-4">
+                    <span class="text-xs font-bold text-orange-400 uppercase tracking-wider bg-orange-900/30 px-3 py-1 rounded border border-orange-700/50">Master</span>
+                    <div class="flex-1 relative flex justify-center min-h-[150px] w-full items-center">
+                        <input type="range" orient="vertical" id="vol-master" min="0" max="1.5" step="0.01" value="1" class="absolute bg-neutral-900 rounded-lg outline-none accent-red-500 cursor-pointer shadow-inner">
+                    </div>
+                    <button id="mute-master" class="w-12 h-10 rounded bg-red-900/50 border border-red-800 text-[10px] font-bold text-white hover:bg-red-800 transition-colors shadow-md mt-2">MUTE</button>
+                </div>
 
             </div>
         </div>
@@ -258,31 +365,69 @@
     </main>
 
     <script>
-        // --- Global State ---
+        // --- Global Engine State ---
         let audioCtx;
-        let audioBuffer;
-        let streamDestination; // Added for performance recording
-        let mediaRecorder;     // Added for performance recording
-        let recordedChunks = []; // Added for performance recording
-        let slices = []; // Array of { id, start, end, key, padIndex, pitch, speed, reverse, attack, release, processedBuffer }
+        let streamDestination; 
+        let mediaRecorder;     
+        let recordedChunks = []; 
         let activeSources = [];
+        
+        // Mixer Node State
+        let masterGainNode = null;
+        let bankGainNodes = [];
+        let masterVolume = 1.0;
+        let masterMute = false;
+
+        let currentlyPlayingSlice = null;
+        
+        // --- Bank & Track State ---
+        const NUM_BANKS = 4;
+        const NUM_BARS = 32;
+        
+        let currentBankIndex = 0;
+        
+        const banks = Array.from({length: NUM_BANKS}, (_, i) => ({
+            id: String.fromCharCode(65 + i), // A, B, C, D
+            audioBuffer: null,
+            slices: [],
+            zoom: 1,
+            pan: 0,
+            bpm: 120,
+            patterns: [],
+            currentPatternIndex: 0,
+            volume: 1.0,
+            mute: false
+        }));
+
+        // Link the active global variables directly to Bank A on boot
+        let audioBuffer = banks[0].audioBuffer;
+        let slices = banks[0].slices; 
+        let zoom = banks[0].zoom;
+        let pan = banks[0].pan; 
+        let patterns = banks[0].patterns; 
+        let currentPatternIndex = banks[0].currentPatternIndex;
+
+        let songArrangement = Array.from({length: NUM_BARS}, () => [null, null, null, null]);
+        
+        // Precise Lookahead Scheduler State
+        let isPlaying = false;
+        let playMode = null; // 'pattern' or 'song'
+        let isPatternRecording = false;
+        let nextTickTime = 0;
+        let currentTick = 0;
+        let scheduleAheadTime = 0.1; // 100ms lookahead
+        let playbackStartTime = 0;
+        let seqTimeoutId = null;
+        let lastHighlightedStep = -1;
+        let isPaused = false;
+        let isMetronomeOn = false;
+
+        // View State
         let selectedPadIndex = null;
-        
-        // Sequencer & Visual State
-        let sequence = [];
-        let isRecordingSeq = false;
-        let isSequencerPlaying = false;
-        let currentlyPlayingSlice = null; // Used for canvas highlighting
-        
-        // Dragging & View State
         let isDraggingMarker = false;
-        let dragTarget = null; // 'start' or 'end'
-        let zoom = 1;
-        let pan = 0; // left edge offset in seconds
+        let dragTarget = null; 
         let isPanning = false;
         let lastPanX = 0;
-        
-        // Multi-touch Zoom State
         let isPinching = false;
         let initialPinchDistance = null;
         let initialZoom = 1;
@@ -290,7 +435,7 @@
 
         // Configuration
         const PAD_KEYS = ['1','2','3','4','Q','W','E','R','A','S','D','F','Z','X','C','V'];
-        const MIDI_START_NOTE = 36; // C1 triggers pad 1
+        const MIDI_START_NOTE = 36; 
 
         // DOM Elements
         const canvas = document.getElementById('waveform-canvas');
@@ -300,15 +445,21 @@
         const bpmInput = document.getElementById('bpm-input');
         const autoChopBtn = document.getElementById('btn-autochop');
         const stopBtn = document.getElementById('btn-stop');
-        const playSequenceBtn = document.getElementById('btn-play-sequence');
         const emptyState = document.getElementById('empty-state');
         
-        // Recording Elements
         const recordPerfBtn = document.getElementById('btn-record-perf');
         const downloadPerfBtn = document.getElementById('btn-download-perf');
         const recordSampleBtn = document.getElementById('btn-record-sample');
         
-        // Editor Elements
+        const viewSampler = document.getElementById('view-sampler');
+        const viewArranger = document.getElementById('view-arranger');
+        const viewMixer = document.getElementById('view-mixer');
+        const tabSampler = document.getElementById('tab-sampler');
+        const tabArranger = document.getElementById('tab-arranger');
+        const tabMixer = document.getElementById('tab-mixer');
+        const patBankLabel = document.getElementById('pat-bank-label');
+        const patLengthSelect = document.getElementById('pat-length-select');
+        
         const editorEmpty = document.getElementById('editor-empty');
         const editorControls = document.getElementById('editor-controls');
         const editStartInput = document.getElementById('edit-start');
@@ -316,19 +467,79 @@
         const editPadKey = document.getElementById('edit-pad-key');
         const applyEditBtn = document.getElementById('btn-apply-edit');
         const reverseBtn = document.getElementById('btn-reverse');
-        
-        // Mode Elements
         const editPlaymode = document.getElementById('edit-playmode');
         const editChokegroup = document.getElementById('edit-chokegroup');
 
-        // --- Initialization ---
+        // --- Initialization & Bank Management ---
 
         function initAudio() {
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 streamDestination = audioCtx.createMediaStreamDestination();
+
+                // Initialize Mixer Nodes
+                masterGainNode = audioCtx.createGain();
+                masterGainNode.gain.value = masterMute ? 0 : masterVolume;
+                masterGainNode.connect(audioCtx.destination);
+                masterGainNode.connect(streamDestination);
+
+                for(let i = 0; i < NUM_BANKS; i++) {
+                    const bg = audioCtx.createGain();
+                    bg.gain.value = banks[i].mute ? 0 : banks[i].volume;
+                    bg.connect(masterGainNode);
+                    bankGainNodes.push(bg);
+                }
             }
         }
+
+        function syncStateToBank() {
+            const b = banks[currentBankIndex];
+            b.audioBuffer = audioBuffer;
+            b.slices = slices;
+            b.zoom = zoom;
+            b.pan = pan;
+            b.bpm = bpmInput.value;
+            b.currentPatternIndex = currentPatternIndex;
+        }
+
+        function switchBank(index) {
+            syncStateToBank();
+            currentBankIndex = index;
+            const b = banks[currentBankIndex];
+            
+            audioBuffer = b.audioBuffer;
+            slices = b.slices;
+            zoom = b.zoom;
+            pan = b.pan;
+            bpmInput.value = b.bpm || 120;
+            patterns = b.patterns;
+            currentPatternIndex = b.currentPatternIndex;
+            selectedPadIndex = null;
+
+            document.querySelectorAll('.bank-btn').forEach((btn, i) => {
+                if(i === currentBankIndex) {
+                    btn.className = 'bank-btn w-6 h-6 md:w-7 md:h-7 rounded bg-orange-600 text-white text-xs font-bold transition-colors shadow-inner';
+                } else {
+                    btn.className = 'bank-btn w-6 h-6 md:w-7 md:h-7 rounded bg-neutral-800 text-neutral-400 text-xs font-bold hover:bg-neutral-700 transition-colors';
+                }
+            });
+
+            emptyState.style.display = audioBuffer ? 'none' : 'flex';
+            patBankLabel.innerText = b.id;
+
+            drawWaveform();
+            updatePadVisuals();
+            selectPad(slices.length > 0 ? 0 : null);
+            renderPatternBank();
+            renderStepSequencer();
+        }
+
+        document.querySelectorAll('.bank-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const newIndex = parseInt(e.target.dataset.bank);
+                if(newIndex !== currentBankIndex) switchBank(newIndex);
+            });
+        });
 
         function initPads() {
             padsContainer.innerHTML = '';
@@ -348,7 +559,6 @@
                 pad.appendChild(label);
                 pad.appendChild(midiHint);
                 
-                // Mouse & Touch support mapped properly
                 pad.addEventListener('mousedown', (e) => { e.preventDefault(); handlePadTrigger(index); });
                 pad.addEventListener('touchstart', (e) => { e.preventDefault(); handlePadTrigger(index); }, {passive: false});
                 
@@ -356,17 +566,77 @@
             });
         }
 
+        function updatePadVisuals() {
+            for (let i = 0; i < 16; i++) {
+                const padEl = document.getElementById(`pad-${i}`);
+                if (padEl) {
+                    if (slices.find(s => s.padIndex === i)) {
+                        padEl.classList.remove('bg-neutral-800');
+                        padEl.classList.add('bg-neutral-700');
+                        padEl.style.borderColor = '#f97316';
+                    } else {
+                        padEl.classList.add('bg-neutral-800');
+                        padEl.classList.remove('bg-neutral-700');
+                        padEl.style.borderColor = ''; 
+                    }
+                }
+            }
+        }
+
+        // --- Mixer Interaction Logic ---
+        function initMixer() {
+            for (let i = 0; i < NUM_BANKS; i++) {
+                const volSlider = document.getElementById(`vol-bank-${i}`);
+                const muteBtn = document.getElementById(`mute-bank-${i}`);
+                
+                volSlider.addEventListener('input', (e) => {
+                    const val = parseFloat(e.target.value);
+                    banks[i].volume = val;
+                    if (audioCtx && bankGainNodes[i] && !banks[i].mute) {
+                        bankGainNodes[i].gain.setTargetAtTime(val, audioCtx.currentTime, 0.01);
+                    }
+                });
+
+                muteBtn.addEventListener('click', (e) => {
+                    banks[i].mute = !banks[i].mute;
+                    e.target.classList.toggle('bg-red-600', banks[i].mute);
+                    e.target.classList.toggle('bg-neutral-700', !banks[i].mute);
+                    if (audioCtx && bankGainNodes[i]) {
+                        bankGainNodes[i].gain.setTargetAtTime(banks[i].mute ? 0 : banks[i].volume, audioCtx.currentTime, 0.01);
+                    }
+                });
+            }
+
+            const masterVolSlider = document.getElementById('vol-master');
+            const masterMuteBtn = document.getElementById('mute-master');
+
+            masterVolSlider.addEventListener('input', (e) => {
+                masterVolume = parseFloat(e.target.value);
+                if (audioCtx && masterGainNode && !masterMute) {
+                    masterGainNode.gain.setTargetAtTime(masterVolume, audioCtx.currentTime, 0.01);
+                }
+            });
+
+            masterMuteBtn.addEventListener('click', (e) => {
+                masterMute = !masterMute;
+                e.target.classList.toggle('bg-red-800', masterMute);
+                e.target.classList.toggle('bg-red-900/50', !masterMute);
+                if (audioCtx && masterGainNode) {
+                    masterGainNode.gain.setTargetAtTime(masterMute ? 0 : masterVolume, audioCtx.currentTime, 0.01);
+                }
+            });
+        }
+
+
         // --- Audio File Handling & BPM Detection ---
 
         async function detectBPM(buffer) {
             bpmInput.value = "⏳";
             try {
-                // Use OfflineAudioContext for fast heuristic processing
                 const offlineCtx = new OfflineAudioContext(1, buffer.length, buffer.sampleRate);
                 const source = offlineCtx.createBufferSource();
                 source.buffer = buffer;
                 
-                // Lowpass filter to focus on kick drums/bass
                 const filter = offlineCtx.createBiquadFilter();
                 filter.type = "lowpass";
                 filter.frequency.value = 150; 
@@ -378,7 +648,6 @@
                 const renderedBuffer = await offlineCtx.startRendering();
                 const data = renderedBuffer.getChannelData(0);
                 
-                // Peak detection
                 let maxVal = 0;
                 for(let i=0; i<data.length; i++) if(data[i] > maxVal) maxVal = data[i];
                 const threshold = maxVal * 0.8;
@@ -387,16 +656,14 @@
                 for(let i=0; i<data.length; i++) {
                     if (data[i] > threshold) {
                         peaks.push(i / buffer.sampleRate);
-                        i += Math.floor(buffer.sampleRate / 4); // skip ~250ms forward
+                        i += Math.floor(buffer.sampleRate / 4); 
                     }
                 }
                 
-                // Interval grouping
                 let intervals = {};
                 for(let i=1; i<peaks.length; i++) {
                     let diff = peaks[i] - peaks[i-1];
                     let bpm = Math.round(60 / diff);
-                    // Filter to standard tempo range
                     while(bpm < 70) bpm *= 2;
                     while(bpm > 160) bpm /= 2;
                     if (bpm >= 70 && bpm <= 160) {
@@ -414,7 +681,7 @@
                 }
                 bpmInput.value = guessedBPM || 120;
             } catch(e) {
-                console.error("BPM auto-detection failed, defaulting to 120", e);
+                console.error("BPM auto-detection failed", e);
                 bpmInput.value = 120;
             }
         }
@@ -432,10 +699,10 @@
                     const arrayBuffer = ev.target.result;
                     audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
                     slices = []; 
-                    zoom = 1; // Reset zoom on new load
-                    pan = 0;  // Reset pan
+                    zoom = 1; 
+                    pan = 0;  
                     drawWaveform();
-                    await detectBPM(audioBuffer); // Auto detect BPM
+                    await detectBPM(audioBuffer); 
                     autoChop(); 
                 } catch (err) {
                     alert("Error decoding audio file.");
@@ -445,7 +712,7 @@
             reader.readAsArrayBuffer(file);
         });
 
-        // --- Waveform Rendering & Canvas Dragging ---
+        // --- Waveform Rendering ---
 
         function drawWaveform() {
             if (!audioBuffer) return;
@@ -463,7 +730,6 @@
             const totalDuration = audioBuffer.duration;
             const visibleDuration = totalDuration / zoom;
             
-            // Clamp pan to boundaries
             pan = Math.max(0, Math.min(pan, totalDuration - visibleDuration));
 
             const sampleRate = audioBuffer.sampleRate;
@@ -501,37 +767,30 @@
                 const xStart = ((slice.start - pan) / visibleDuration) * width;
                 const xEnd = ((slice.end - pan) / visibleDuration) * width;
                 
-                // Color regions based on state
                 if (currentlyPlayingSlice === slice.padIndex) {
-                    ctx.fillStyle = 'rgba(239, 68, 68, 0.4)'; // Red if playing sequence
+                    ctx.fillStyle = 'rgba(239, 68, 68, 0.4)'; 
                 } else if (selectedPadIndex === slice.padIndex) {
-                    ctx.fillStyle = 'rgba(249, 115, 22, 0.2)'; // Orange if selected
+                    ctx.fillStyle = 'rgba(249, 115, 22, 0.2)'; 
                 } else {
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
                 }
                 
-                // Only draw rect if it's somewhat on screen to prevent massive rect issues
                 if (xEnd > 0 && xStart < width) {
                     ctx.fillRect(Math.max(0, xStart), 0, Math.min(width, xEnd) - Math.max(0, xStart), height);
                 }
                 
-                // Draw enhanced lines & drag handles for SELECTED slice
                 if (selectedPadIndex === slice.padIndex) {
-                    // Start Marker (Orange)
                     if (xStart >= -10 && xStart <= width + 10) {
                         ctx.fillStyle = '#f97316';
                         ctx.fillRect(xStart - 1, 0, 3, height);
                         ctx.beginPath(); ctx.arc(xStart, 10, 5, 0, Math.PI * 2); ctx.fill();
                     }
-                    
-                    // End Marker (Reddish)
                     if (xEnd >= -10 && xEnd <= width + 10) {
                         ctx.fillStyle = '#ef4444';
                         ctx.fillRect(xEnd - 1, 0, 3, height);
                         ctx.beginPath(); ctx.arc(xEnd, height - 10, 5, 0, Math.PI * 2); ctx.fill();
                     }
                 } else {
-                    // Regular slice line
                     if (xStart >= 0 && xStart <= width) {
                         ctx.strokeStyle = 'rgba(249, 115, 22, 0.3)';
                         ctx.lineWidth = 1;
@@ -542,7 +801,6 @@
                     }
                 }
                 
-                // Key label
                 if (xStart >= -20 && xStart <= width) {
                     ctx.fillStyle = (selectedPadIndex === slice.padIndex || currentlyPlayingSlice === slice.padIndex) ? '#fff' : '#f97316';
                     ctx.font = '10px monospace';
@@ -551,7 +809,6 @@
             });
         }
 
-        // Viewport Utility
         function getClientX(e) {
             return e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
         }
@@ -563,36 +820,26 @@
             return pan + ((clientX - rect.left) / canvas.width) * visibleDuration;
         }
 
-        // Pinch Zoom Utilities
         function getPinchDistance(e) {
-            return Math.hypot(
-                e.touches[0].clientX - e.touches[1].clientX,
-                e.touches[0].clientY - e.touches[1].clientY
-            );
+            return Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
         }
 
         function getPinchCenter(e) {
             return (e.touches[0].clientX + e.touches[1].clientX) / 2;
         }
 
-        // Canvas Interaction Events (Zoom, Pan, Drag & Drop markers)
-        
         canvas.addEventListener('wheel', (e) => {
             if (!audioBuffer) return;
-            e.preventDefault(); // Stop page scrolling
-            
+            e.preventDefault(); 
             const timeAtCursorBefore = getTimeAtCursor(e);
             const rect = canvas.getBoundingClientRect();
             const mouseX = e.clientX - rect.left;
 
-            // Zoom multiplier
             const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85; 
             zoom *= zoomFactor;
-            zoom = Math.max(1, Math.min(zoom, 500)); // Cap zoom between 1x and 500x
+            zoom = Math.max(1, Math.min(zoom, 500)); 
 
             const visibleDurationAfter = audioBuffer.duration / zoom;
-
-            // Adjust pan to keep the mouse anchored to the same timestamp
             pan = timeAtCursorBefore - (mouseX / canvas.width) * visibleDurationAfter;
             pan = Math.max(0, Math.min(pan, audioBuffer.duration - visibleDurationAfter));
 
@@ -602,7 +849,6 @@
         const handleCanvasMove = (e) => {
             if (!audioBuffer) return;
 
-            // Handle Multi-touch Pinch Zoom
             if (e.touches && e.touches.length === 2) {
                 if (!isPinching) return;
                 if (e.cancelable) e.preventDefault();
@@ -617,7 +863,6 @@
                 const centerX = getPinchCenter(e) - rect.left;
                 const visibleDurationAfter = audioBuffer.duration / zoom;
 
-                // Adjust pan to keep zoom centered on the pinch location
                 pan = pinchCenterTime - (centerX / canvas.width) * visibleDurationAfter;
                 pan = Math.max(0, Math.min(pan, audioBuffer.duration - visibleDurationAfter));
 
@@ -628,7 +873,7 @@
             const timeAtCursor = getTimeAtCursor(e);
             
             if (isDraggingMarker && selectedPadIndex !== null) {
-                if (e.cancelable) e.preventDefault(); // Prevent mobile scroll while dragging
+                if (e.cancelable) e.preventDefault(); 
                 const slice = slices.find(s => s.padIndex === selectedPadIndex);
                 if (dragTarget === 'start') {
                     slice.start = Math.max(0, Math.min(timeAtCursor, slice.end - 0.001));
@@ -639,7 +884,7 @@
                 }
                 drawWaveform();
             } else if (isPanning) {
-                if (e.cancelable) e.preventDefault(); // Prevent mobile scroll while panning
+                if (e.cancelable) e.preventDefault(); 
                 const clientX = getClientX(e);
                 const deltaX = clientX - lastPanX;
                 const visibleDuration = audioBuffer.duration / zoom;
@@ -650,7 +895,6 @@
                 lastPanX = clientX;
                 drawWaveform();
             } else {
-                // Hover detection logic to change cursor style
                 let hoverFound = false;
                 if (selectedPadIndex !== null) {
                     const slice = slices.find(s => s.padIndex === selectedPadIndex);
@@ -671,7 +915,6 @@
         const handleCanvasDown = (e) => {
             if (!audioBuffer) return;
 
-            // Initialize Multi-touch Pinch
             if (e.touches && e.touches.length === 2) {
                 isPinching = true;
                 initialPinchDistance = getPinchDistance(e);
@@ -689,7 +932,7 @@
             if (selectedPadIndex !== null) {
                 const slice = slices.find(s => s.padIndex === selectedPadIndex);
                 const visibleDuration = audioBuffer.duration / zoom;
-                const timeTolerance = (12 / canvas.width) * visibleDuration; // Larger touch area threshold
+                const timeTolerance = (12 / canvas.width) * visibleDuration; 
                 
                 if (Math.abs(slice.start - timeAtCursor) < timeTolerance) {
                     isDraggingMarker = true; dragTarget = 'start'; targetFound = true;
@@ -706,12 +949,8 @@
         };
 
         const handleCanvasUp = async (e) => {
-            // Handle releasing a pinch safely
-            if (e && e.touches && e.touches.length < 2) {
-                isPinching = false;
-            }
+            if (e && e.touches && e.touches.length < 2) isPinching = false;
             if (e && e.touches && e.touches.length === 1) {
-                // Keep the remaining finger smoothly ready for panning without jumping
                 lastPanX = e.touches[0].clientX;
                 return; 
             }
@@ -724,22 +963,18 @@
                 canvas.style.cursor = zoom > 1 ? 'grab' : 'crosshair';
             }
             if (wasDragging && selectedPadIndex !== null) {
-                // If a user was dragging markers, safely rebuild the audio buffer when they let go
                 const slice = slices.find(s => s.padIndex === selectedPadIndex);
                 await processSliceBuffer(slice);
             }
         };
 
-        // Attach Mouse & Touch listeners for Canvas
         canvas.addEventListener('mousemove', handleCanvasMove);
         canvas.addEventListener('touchmove', handleCanvasMove, {passive: false});
-        
         canvas.addEventListener('mousedown', handleCanvasDown);
         canvas.addEventListener('touchstart', (e) => { 
             if (e.cancelable) e.preventDefault(); 
             handleCanvasDown(e); 
         }, {passive: false});
-
         window.addEventListener('mouseup', handleCanvasUp);
         window.addEventListener('touchend', handleCanvasUp);
 
@@ -754,27 +989,23 @@
             const length = endSample - startSample;
             if (length <= 0) return;
 
-            // Extract exact slice to prevent memory sharing issues
             let sliceData = [];
             for (let c=0; c<audioBuffer.numberOfChannels; c++) {
                 sliceData.push(new Float32Array(audioBuffer.getChannelData(c).subarray(startSample, endSample)));
             }
 
-            // Reverse
             if (slice.reverse) {
                 for (let c=0; c<audioBuffer.numberOfChannels; c++) {
                     sliceData[c].reverse();
                 }
             }
 
-            // Calculate exact stretch compensation to detach speed from pitch
             const durationMultiplier = 1 / (slice.speed || 1.0);
             const pitchRate = Math.pow(2, (slice.pitch || 0) / 12);
             const granularStretch = durationMultiplier * pitchRate;
 
-            // Apply Granular Synthesis Time Stretch
             if (Math.abs(granularStretch - 1.0) > 0.01) {
-                const grainSize = 0.05; // 50ms grains
+                const grainSize = 0.05; 
                 const grainSamples = Math.floor(sampleRate * grainSize);
                 const hopIn = Math.floor(grainSamples * 0.25);
                 const hopOut = Math.floor(hopIn * granularStretch);
@@ -784,7 +1015,7 @@
                 
                 const window = new Float32Array(grainSamples);
                 for(let i=0; i<grainSamples; i++) {
-                    window[i] = (0.5 * (1 - Math.cos((2 * Math.PI * i) / (grainSamples - 1)))) * 0.5; // Normalized Hann window
+                    window[i] = (0.5 * (1 - Math.cos((2 * Math.PI * i) / (grainSamples - 1)))) * 0.5; 
                 }
 
                 for (let c=0; c<audioBuffer.numberOfChannels; c++) {
@@ -839,35 +1070,21 @@
                     padIndex: i,
                     pitch: 0,
                     speed: 1.0,
+                    volume: 1.0,
                     reverse: false,
                     attack: 0.01,
                     release: 0.1,
-                    playMode: 'choke', // Default to choke
-                    chokeGroup: 1,     // Default to group 1
+                    playMode: 'choke', 
+                    chokeGroup: 1,
+                    bankIndex: currentBankIndex,
                     processedBuffer: null
                 };
                 slices.push(slice);
-                await processSliceBuffer(slice); // Pre-generate buffer
-                
+                await processSliceBuffer(slice); 
                 currentTime += beatDuration;
-                
-                const padEl = document.getElementById(`pad-${i}`);
-                if (padEl) {
-                    padEl.classList.remove('bg-neutral-800');
-                    padEl.classList.add('bg-neutral-700');
-                    padEl.style.borderColor = '#f97316';
-                }
-            }
-
-            for(let i = slices.length; i < 16; i++){
-                const padEl = document.getElementById(`pad-${i}`);
-                if (padEl) {
-                    padEl.classList.add('bg-neutral-800');
-                    padEl.classList.remove('bg-neutral-700');
-                    padEl.style.borderColor = ''; 
-                }
             }
             
+            updatePadVisuals();
             drawWaveform();
             selectPad(0); 
         }
@@ -887,18 +1104,41 @@
             activeSources = [];
         }
 
-        stopBtn.addEventListener('click', stopAllAudio);
+        function transportStop() {
+            stopAllAudio();
+            isPlaying = false;
+            isPaused = false;
+            currentTick = 0;
+            if (seqTimeoutId) clearTimeout(seqTimeoutId);
+            updatePlayhead(-1);
+        }
 
-        function playSlice(slice, when = 0, isSeqPlay = false, seqIndex = -1) {
-            if (!audioCtx || (!slice.processedBuffer && !audioBuffer)) return;
+        function transportPause() {
+            if (!isPlaying) return;
+            stopAllAudio();
+            isPlaying = false;
+            isPaused = true;
+            if (seqTimeoutId) clearTimeout(seqTimeoutId);
+            updatePlayhead(currentTick);
+        }
+
+        function playSlice(slice, when = 0, isSeqPlay = false, seqIndex = -1, overrideBuffer = null) {
+            if (!audioCtx || (!slice.processedBuffer && !overrideBuffer && !audioBuffer)) return;
             if (audioCtx.state === 'suspended') audioCtx.resume();
             
-            // CHOKE GROUPS: Stop only sounds in the same choke group
+            // CHOKE GROUPS logic update
             if (slice.playMode === 'choke') {
                 activeSources = activeSources.filter(active => {
-                    if (active.mode === 'choke' && active.chokeGroup === slice.chokeGroup) {
-                        try { active.source.stop(); } catch(e) {}
-                        return false; // Remove from tracking array
+                    // Choke only sounds in the exact same Bank AND Group
+                    if (active.mode === 'choke' && active.chokeGroup === slice.chokeGroup && active.bankIndex === slice.bankIndex) {
+                        try { 
+                            if (when > audioCtx.currentTime) {
+                                active.source.stop(when); 
+                            } else {
+                                active.source.stop(); 
+                            }
+                        } catch(e) {}
+                        return false; 
                     }
                     return true;
                 });
@@ -907,76 +1147,71 @@
             const source = audioCtx.createBufferSource();
             const gainNode = audioCtx.createGain();
             
-            source.buffer = slice.processedBuffer || audioBuffer;
+            source.buffer = slice.processedBuffer || overrideBuffer || audioBuffer;
 
-            // Pitch shift (playbackRate)
             const semitones = slice.pitch || 0;
             const playbackRate = Math.pow(2, semitones / 12);
             source.playbackRate.value = playbackRate;
 
-            // Envelopes (Attack & Release)
             const attack = parseFloat(slice.attack) || 0.01;
             const release = parseFloat(slice.release) || 0.1;
+            const sliceVol = slice.volume !== undefined ? parseFloat(slice.volume) : 1.0;
             
-            // Actual physical duration factors in speed AND pitch
             const actualDuration = slice.processedBuffer 
                 ? slice.processedBuffer.duration / playbackRate 
                 : (slice.end - slice.start) / playbackRate;
             
             const playTime = when === 0 ? audioCtx.currentTime : when;
 
-            // Define Envelope schedule
             gainNode.gain.setValueAtTime(0, playTime);
-            gainNode.gain.linearRampToValueAtTime(1, playTime + attack);
-            gainNode.gain.setValueAtTime(1, Math.max(playTime + attack, playTime + actualDuration - release));
+            gainNode.gain.linearRampToValueAtTime(sliceVol, playTime + attack);
+            gainNode.gain.setValueAtTime(sliceVol, Math.max(playTime + attack, playTime + actualDuration - release));
             gainNode.gain.linearRampToValueAtTime(0, playTime + actualDuration);
             
             source.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            gainNode.connect(streamDestination); // Route to the performance recorder
-            
-            if (slice.processedBuffer) {
-                source.start(playTime, 0); // Play full processed buffer
+
+            // MIXER ROUTING: Route to bank gain if exists, else fallback to standard outputs
+            if (bankGainNodes[slice.bankIndex]) {
+                gainNode.connect(bankGainNodes[slice.bankIndex]);
             } else {
-                source.start(playTime, slice.start, slice.end - slice.start); // Fallback
+                gainNode.connect(audioCtx.destination);
+                gainNode.connect(streamDestination); 
             }
             
-            // Track the source with its metadata for choke functionality
+            if (slice.processedBuffer) {
+                source.start(playTime, 0); 
+            } else {
+                source.start(playTime, slice.start, slice.end - slice.start); 
+            }
+            
             activeSources.push({
                 source: source,
                 padIndex: slice.padIndex,
                 chokeGroup: slice.chokeGroup,
+                bankIndex: slice.bankIndex,
                 mode: slice.playMode
             });
 
-            // Clean up memory when source finishes naturally
             source.onended = () => {
                 activeSources = activeSources.filter(s => s.source !== source);
             };
 
-            // UI Highlight Scheduling
             const uiTimeDelay = when === 0 ? 0 : (when - audioCtx.currentTime) * 1000;
             
             setTimeout(() => {
-                animatePad(slice.padIndex);
-                currentlyPlayingSlice = slice.padIndex;
-                drawWaveform();
-                
-                // Sequencer block highlight
-                if (isSeqPlay && seqIndex > -1) {
-                    document.querySelectorAll('.seq-block').forEach(b => b.classList.replace('bg-orange-500', 'bg-neutral-700'));
-                    const block = document.getElementById(`seq-block-${seqIndex}`);
-                    if (block) block.classList.replace('bg-neutral-700', 'bg-orange-500');
+                // Only animate pad if it belongs to the currently visible bank
+                if (slice.bankIndex === currentBankIndex) {
+                    animatePad(slice.padIndex);
+                    currentlyPlayingSlice = slice.padIndex;
+                    drawWaveform();
+                    
+                    setTimeout(() => {
+                        if (currentlyPlayingSlice === slice.padIndex && !isPlaying) {
+                            currentlyPlayingSlice = null; 
+                            drawWaveform();
+                        }
+                    }, actualDuration * 1000);
                 }
-
-                // Cleanup visual highlights after slice ends
-                setTimeout(() => {
-                    if (currentlyPlayingSlice === slice.padIndex && !isSequencerPlaying) {
-                        currentlyPlayingSlice = null; 
-                        drawWaveform();
-                    }
-                }, actualDuration * 1000);
-
             }, Math.max(0, uiTimeDelay));
         }
 
@@ -1006,12 +1241,15 @@
                 document.getElementById('val-pitch').innerText = `${slice.pitch > 0 ? '+' : ''}${slice.pitch || 0} st`;
                 document.getElementById('edit-speed').value = slice.speed || 1.0;
                 document.getElementById('val-speed').innerText = `${(slice.speed || 1.0).toFixed(2)}x`;
+                
+                document.getElementById('edit-volume').value = slice.volume !== undefined ? slice.volume : 1.0;
+                document.getElementById('val-volume').innerText = `${(slice.volume !== undefined ? slice.volume : 1.0).toFixed(2)}`;
+
                 document.getElementById('edit-attack').value = slice.attack || 0.01;
                 document.getElementById('val-attack').innerText = `${slice.attack || 0.01}s`;
                 document.getElementById('edit-release').value = slice.release || 0.1;
                 document.getElementById('val-release').innerText = `${slice.release || 0.1}s`;
 
-                // Update Play Mode & Choke UI
                 editPlaymode.value = slice.playMode || 'choke';
                 editChokegroup.value = slice.chokeGroup || 1;
                 editChokegroup.disabled = (slice.playMode === 'oneshot');
@@ -1037,18 +1275,36 @@
             initAudio(); 
             selectPad(index);
             const slice = slices.find(s => s.padIndex === index);
+            
             if (slice) {
-                playSlice(slice);
-                
-                // Add to visual sequence if recording
-                if (isRecordingSeq) {
-                    sequence.push(index);
-                    renderSequence();
+                // Real-time Sequence Recording (Quantized)
+                if (isPatternRecording && isPlaying && playMode === 'pattern') {
+                    const masterBpm = parseFloat(bpmInput.value) || 120;
+                    const secondsPerStep = (60.0 / masterBpm) / 4;
+                    const timeSinceStart = audioCtx.currentTime - playbackStartTime;
+                    
+                    const pat = banks[currentBankIndex].patterns[currentPatternIndex];
+                    const maxSteps = pat.bars * 16;
+                    
+                    let closestStep = Math.round(timeSinceStart / secondsPerStep) % maxSteps;
+                    if (closestStep < 0) closestStep += maxSteps;
+                    
+                    pat.grid[index][closestStep] = true;
+                    renderStepSequencer(); 
                 }
+
+                // Stop any other immediate pad presses if choke mode
+                if (slice.playMode === 'choke') {
+                    activeSources.forEach(active => {
+                        if(active.mode === 'choke' && active.chokeGroup === slice.chokeGroup && active.bankIndex === slice.bankIndex) {
+                            try { active.source.stop(); } catch(e){}
+                        }
+                    });
+                }
+                playSlice(slice);
             }
         }
 
-        // Editor Sliders Events
         const attachSlider = (id, prop, unit, isBufferProp) => {
             const input = document.getElementById(`edit-${id}`);
             input.addEventListener('input', (e) => {
@@ -1058,7 +1314,6 @@
                     slices.find(s => s.padIndex === selectedPadIndex)[prop] = val;
                 }
             });
-            // Buffer-altering properties (Pitch & Speed) generate new audio on mouse release
             if (isBufferProp) {
                 input.addEventListener('change', async (e) => {
                     if (selectedPadIndex !== null) {
@@ -1071,10 +1326,10 @@
         };
         attachSlider('pitch', 'pitch', ' st', true);
         attachSlider('speed', 'speed', 'x', true);
+        attachSlider('volume', 'volume', '', false);
         attachSlider('attack', 'attack', 's', false);
         attachSlider('release', 'release', 's', false);
 
-        // Play Mode Events
         editPlaymode.addEventListener('change', (e) => {
             if (selectedPadIndex !== null) {
                 const slice = slices.find(s => s.padIndex === selectedPadIndex);
@@ -1122,82 +1377,13 @@
         });
 
         window.addEventListener('keydown', (e) => {
-            // Only ignore key presses if we are actively typing in a text or number box
             if (e.target.tagName === 'INPUT' && (e.target.type === 'text' || e.target.type === 'number')) return;
             
             const padIndex = PAD_KEYS.indexOf(e.key.toUpperCase());
             if (padIndex !== -1 && !e.repeat) {
-                e.preventDefault(); // Prevents default browser actions when hitting keys
+                e.preventDefault(); 
                 handlePadTrigger(padIndex);
             }
-        });
-
-        // --- Visual Remix Sequencer Logic ---
-        
-        function renderSequence() {
-            const track = document.getElementById('sequence-track');
-            const emptyText = document.getElementById('seq-empty-text');
-            
-            if (sequence.length === 0) {
-                emptyText.style.display = 'flex';
-                Array.from(track.children).forEach(c => { if(c.id !== 'seq-empty-text') c.remove() });
-            } else {
-                emptyText.style.display = 'none';
-                Array.from(track.children).forEach(c => { if(c.id !== 'seq-empty-text') c.remove() });
-                sequence.forEach((padIdx, i) => {
-                    const block = document.createElement('div');
-                    block.className = `seq-block flex-shrink-0 w-10 h-10 rounded bg-neutral-700 border border-neutral-600 flex items-center justify-center text-sm font-bold text-neutral-300 transition-colors shadow`;
-                    block.id = `seq-block-${i}`;
-                    block.innerText = PAD_KEYS[padIdx];
-                    track.appendChild(block);
-                });
-                // Auto scroll
-                track.scrollLeft = track.scrollWidth;
-            }
-        }
-
-        document.getElementById('btn-record-seq').addEventListener('click', (e) => {
-            isRecordingSeq = !isRecordingSeq;
-            e.target.classList.toggle('bg-red-600', isRecordingSeq);
-            e.target.classList.toggle('text-white', isRecordingSeq);
-            e.target.classList.toggle('animate-pulse', isRecordingSeq);
-        });
-
-        document.getElementById('btn-clear-seq').addEventListener('click', () => { sequence = []; renderSequence(); });
-
-        document.getElementById('btn-gen-remix').addEventListener('click', () => {
-            if (slices.length === 0) return;
-            sequence = [];
-            const numSteps = Math.floor(Math.random() * 8) + 8; // 8 to 16 steps
-            for(let i=0; i<numSteps; i++) {
-                sequence.push(slices[Math.floor(Math.random() * slices.length)].padIndex);
-            }
-            renderSequence();
-        });
-
-        playSequenceBtn.addEventListener('click', () => {
-            if (!audioCtx || sequence.length === 0 || isSequencerPlaying) return;
-            initAudio(); stopAllAudio();
-            
-            isSequencerPlaying = true;
-            let scheduleTime = audioCtx.currentTime + 0.1;
-            
-            sequence.forEach((padIdx, i) => {
-                const slice = slices.find(s => s.padIndex === padIdx);
-                if (slice && slice.processedBuffer) {
-                    playSlice(slice, scheduleTime, true, i);
-                    const pbRate = Math.pow(2, (slice.pitch || 0) / 12);
-                    scheduleTime += slice.processedBuffer.duration / pbRate; // Advance by physical duration
-                }
-            });
-            
-            // Clean up visual state when sequence ends
-            setTimeout(() => {
-                isSequencerPlaying = false;
-                currentlyPlayingSlice = null;
-                drawWaveform();
-                document.querySelectorAll('.seq-block').forEach(b => b.classList.replace('bg-orange-500', 'bg-neutral-700'));
-            }, (scheduleTime - audioCtx.currentTime) * 1000);
         });
 
         // --- MIDI Integration ---
@@ -1235,7 +1421,329 @@
             }
         }
 
+        // --- Sequencer & Tab Logic ---
+
+        function setTab(tabName) {
+            const activeCls = 'text-orange-500 border-b-2 border-orange-500 pb-1 text-sm uppercase tracking-wider transition-colors outline-none font-bold';
+            const inactiveCls = 'text-neutral-500 border-b-2 border-transparent pb-1 text-sm uppercase tracking-wider hover:text-neutral-300 transition-colors outline-none font-bold';
+            
+            tabSampler.className = tabName === 'sampler' ? activeCls : inactiveCls;
+            tabArranger.className = tabName === 'arranger' ? activeCls : inactiveCls;
+            tabMixer.className = tabName === 'mixer' ? activeCls : inactiveCls;
+
+            viewSampler.classList.toggle('hidden', tabName !== 'sampler');
+            viewSampler.classList.toggle('flex', tabName === 'sampler');
+            
+            viewArranger.classList.toggle('hidden', tabName !== 'arranger');
+            viewArranger.classList.toggle('flex', tabName === 'arranger');
+            
+            viewMixer.classList.toggle('hidden', tabName !== 'mixer');
+            viewMixer.classList.toggle('flex', tabName === 'mixer');
+        }
+        
+        tabSampler.onclick = () => setTab('sampler');
+        tabArranger.onclick = () => setTab('arranger');
+        tabMixer.onclick = () => setTab('mixer');
+
+        function initSequencer() {
+            createPattern();
+            renderArrangerGrid();
+            
+            document.getElementById('btn-rec-pattern').onclick = (e) => {
+                isPatternRecording = !isPatternRecording;
+                e.target.classList.toggle('bg-red-600', isPatternRecording);
+                e.target.classList.toggle('bg-red-900/50', !isPatternRecording);
+                e.target.classList.toggle('animate-pulse', isPatternRecording);
+            };
+            
+            patLengthSelect.addEventListener('change', (e) => {
+                if (patterns.length === 0) return;
+                patterns[currentPatternIndex].bars = parseInt(e.target.value);
+                renderStepSequencer();
+            });
+        }
+
+        function createPattern() {
+            const pat = {
+                id: patterns.length + 1, 
+                bars: 1,
+                grid: Array(16).fill(null).map(() => Array(64).fill(false)) // Max 4 bars (64 steps) memory
+            };
+            patterns.push(pat);
+            currentPatternIndex = patterns.length - 1;
+            renderPatternBank();
+            renderStepSequencer();
+        }
+
+        function renderPatternBank() {
+            const bank = document.getElementById('pattern-bank');
+            bank.innerHTML = '';
+            patterns.forEach((pat, i) => {
+                const btn = document.createElement('button');
+                const isActive = i === currentPatternIndex;
+                btn.className = `text-[10px] font-bold py-1 px-4 rounded shadow transition-colors border ${isActive ? 'bg-orange-600 text-white border-orange-500' : 'bg-neutral-700 text-neutral-400 border-neutral-600 hover:bg-neutral-600'}`;
+                btn.innerText = `Pat ${pat.id}`;
+                btn.onclick = () => {
+                    currentPatternIndex = i;
+                    renderPatternBank();
+                    renderStepSequencer();
+                };
+                bank.appendChild(btn);
+            });
+            
+            const cpl = document.getElementById('current-pattern-label');
+            if (patterns.length > 0) {
+                cpl.innerText = `Pattern ${patterns[currentPatternIndex].id}`;
+                patLengthSelect.value = patterns[currentPatternIndex].bars;
+            } else {
+                cpl.innerText = '';
+            }
+        }
+
+        function updatePlayhead(tick) {
+            if (lastHighlightedStep !== -1) {
+                document.querySelectorAll(`.step-col-${lastHighlightedStep}`).forEach(el => {
+                    el.style.filter = '';
+                    el.style.transform = '';
+                });
+            }
+            if (tick !== -1) {
+                document.querySelectorAll(`.step-col-${tick}`).forEach(el => {
+                    el.style.filter = 'brightness(1.5)';
+                    el.style.transform = 'scale(1.1)';
+                });
+            }
+            lastHighlightedStep = tick;
+        }
+
+        function renderStepSequencer() {
+            const container = document.getElementById('step-sequencer');
+            container.innerHTML = '';
+            if (patterns.length === 0) return;
+            const pat = patterns[currentPatternIndex];
+            const maxSteps = pat.bars * 16;
+            
+            PAD_KEYS.forEach((key, padIdx) => {
+                const row = document.createElement('div');
+                row.className = 'flex items-center gap-1.5';
+                
+                const label = document.createElement('div');
+                label.className = 'w-6 h-6 flex items-center justify-center bg-neutral-900 text-orange-500 font-bold text-[10px] rounded border border-neutral-700 flex-shrink-0 shadow-inner';
+                label.innerText = key;
+                row.appendChild(label);
+                
+                for(let step=0; step<maxSteps; step++) {
+                    const btn = document.createElement('button');
+                    const isActive = pat.grid[padIdx][step];
+                    const isBeat = step % 4 === 0;
+                    btn.className = `step-col-${step} w-6 h-6 rounded border ${isActive ? 'bg-orange-500 border-orange-400 shadow-[0_0_8px_rgba(249,115,22,0.6)]' : (isBeat ? 'bg-neutral-700 border-neutral-600' : 'bg-neutral-800 border-neutral-700')} hover:bg-neutral-600 transition-all flex-shrink-0 duration-75`;
+                    btn.onclick = () => {
+                        pat.grid[padIdx][step] = !isActive;
+                        renderStepSequencer(); // Redraws specific toggles safely
+                    };
+                    row.appendChild(btn);
+                }
+                container.appendChild(row);
+            });
+            // Re-apply playhead visual if running
+            if (isPlaying && playMode === 'pattern') {
+                updatePlayhead(lastHighlightedStep);
+            }
+        }
+
+        function renderArrangerGrid() {
+            const container = document.getElementById('arranger-grid');
+            container.innerHTML = '';
+            
+            for(let bIdx=0; bIdx<NUM_BANKS; bIdx++) {
+                const row = document.createElement('div');
+                row.className = 'flex gap-1 items-center w-max';
+                
+                const label = document.createElement('div');
+                label.className = 'w-5 h-5 flex items-center justify-center bg-neutral-800 text-neutral-400 font-bold text-[10px] rounded border border-neutral-700 flex-shrink-0';
+                label.innerText = banks[bIdx].id;
+                row.appendChild(label);
+
+                for(let bar=0; bar<NUM_BARS; bar++) {
+                    const slot = document.createElement('div');
+                    const patIdx = songArrangement[bar][bIdx];
+                    const hasPattern = patIdx !== null;
+                    
+                    slot.className = `w-6 h-6 flex items-center justify-center rounded text-[10px] font-bold cursor-pointer border select-none transition-colors flex-shrink-0 ${hasPattern ? 'bg-orange-900/60 border-orange-600 text-orange-100 shadow-[0_0_5px_rgba(234,88,12,0.4)]' : 'bg-neutral-800 border-neutral-700 text-neutral-600 hover:bg-neutral-700'}`;
+                    slot.innerText = hasPattern ? banks[bIdx].patterns[patIdx].id : '';
+                    
+                    slot.onclick = () => {
+                        const targetBankPatterns = banks[bIdx].patterns;
+                        if (targetBankPatterns.length === 0) return alert(`No patterns in Bank ${banks[bIdx].id}. Switch to it in the Sampler and create one first!`);
+                        
+                        if (patIdx === null) {
+                            songArrangement[bar][bIdx] = 0;
+                        } else if (patIdx + 1 < targetBankPatterns.length) {
+                            songArrangement[bar][bIdx] = patIdx + 1;
+                        } else {
+                            songArrangement[bar][bIdx] = null;
+                        }
+                        renderArrangerGrid();
+                    };
+                    row.appendChild(slot);
+                }
+                container.appendChild(row);
+            }
+        }
+
+        document.getElementById('btn-new-pattern').onclick = createPattern;
+        document.getElementById('btn-clear-song').onclick = () => { 
+            songArrangement = Array.from({length: NUM_BARS}, () => [null, null, null, null]); 
+            renderArrangerGrid(); 
+        };
+
+        // --- Web Audio Lookahead Scheduler ---
+        
+        function playMetronomeClick(time, isAccent) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = isAccent ? 1000 : 800;
+            
+            gain.gain.setValueAtTime(0, time);
+            gain.gain.linearRampToValueAtTime(0.5, time + 0.005);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.1);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            gain.connect(streamDestination);
+            
+            osc.start(time);
+            osc.stop(time + 0.1);
+        }
+
+        function scheduleTick(tickNumber, time) {
+            if (isMetronomeOn && tickNumber % 4 === 0) {
+                playMetronomeClick(time, tickNumber % 16 === 0);
+            }
+
+            if (playMode === 'pattern') {
+                const pat = banks[currentBankIndex].patterns[currentPatternIndex];
+                if (pat) {
+                    for (let padIdx = 0; padIdx < 16; padIdx++) {
+                        if (pat.grid[padIdx][tickNumber]) {
+                            const slice = banks[currentBankIndex].slices.find(s => s.padIndex === padIdx);
+                            if (slice && (slice.processedBuffer || banks[currentBankIndex].audioBuffer)) {
+                                playSlice(slice, time, true, -1, banks[currentBankIndex].audioBuffer);
+                            }
+                        }
+                    }
+                }
+            } else if (playMode === 'song') {
+                syncStateToBank();
+                const currentBar = Math.floor(tickNumber / 16);
+                
+                for(let bIdx = 0; bIdx < NUM_BANKS; bIdx++) {
+                    const b = banks[bIdx];
+                    let triggeredBar = -1;
+                    let patIdx = null;
+                    
+                    // Look back to find currently playing multi-bar patterns
+                    for(let bar = currentBar; bar >= 0; bar--) {
+                        if (songArrangement[bar][bIdx] !== null) {
+                            triggeredBar = bar;
+                            patIdx = songArrangement[bar][bIdx];
+                            break;
+                        }
+                    }
+                    
+                    if (patIdx !== null && b.patterns[patIdx]) {
+                        const pat = b.patterns[patIdx];
+                        const tickSinceTrigger = tickNumber - (triggeredBar * 16);
+                        const maxSteps = pat.bars * 16;
+                        
+                        if (tickSinceTrigger < maxSteps) {
+                            for (let padIdx = 0; padIdx < 16; padIdx++) {
+                                if (pat.grid[padIdx][tickSinceTrigger]) {
+                                    const slice = b.slices.find(s => s.padIndex === padIdx);
+                                    if (slice && (slice.processedBuffer || b.audioBuffer)) {
+                                        playSlice(slice, time, true, -1, b.audioBuffer);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Schedule UI Playhead exactly when audio happens
+            const timeToPlay = time - audioCtx.currentTime;
+            setTimeout(() => {
+                if (isPlaying && playMode === 'pattern') {
+                    updatePlayhead(tickNumber);
+                }
+            }, Math.max(0, timeToPlay * 1000));
+        }
+
+        function schedulerLoop() {
+            if (!isPlaying) return;
+            
+            const masterBpm = parseFloat(bpmInput.value) || 120;
+            const secondsPerStep = (60.0 / masterBpm) / 4;
+            
+            while (nextTickTime < audioCtx.currentTime + scheduleAheadTime) {
+                scheduleTick(currentTick, nextTickTime);
+                nextTickTime += secondsPerStep;
+                currentTick++;
+                
+                // Track wrapping based on mode
+                if (playMode === 'pattern') {
+                    const pat = banks[currentBankIndex].patterns[currentPatternIndex];
+                    const maxSteps = (pat ? pat.bars : 1) * 16;
+                    if (currentTick >= maxSteps) currentTick = 0;
+                } else if (playMode === 'song') {
+                    if (currentTick >= NUM_BARS * 16) {
+                        transportStop();
+                        return;
+                    }
+                }
+            }
+            seqTimeoutId = setTimeout(schedulerLoop, 25);
+        }
+
+        function schedulePlayback(mode) {
+            if (!audioCtx) initAudio(); 
+            if (isPlaying) transportStop();
+            
+            isPlaying = true;
+            playMode = mode;
+            playbackStartTime = audioCtx.currentTime + 0.05; // start in 50ms
+            nextTickTime = playbackStartTime;
+            
+            if (!isPaused) {
+                currentTick = 0;
+            }
+            isPaused = false;
+            
+            schedulerLoop();
+        }
+
+        document.getElementById('btn-play-pattern').onclick = () => schedulePlayback('pattern');
+        document.getElementById('btn-play-song').onclick = () => schedulePlayback('song');
+        
+        stopBtn.addEventListener('click', transportStop);
+        
+        document.getElementById('btn-stop-pattern').onclick = transportStop;
+        document.getElementById('btn-pause-pattern').onclick = transportPause;
+        
+        document.getElementById('btn-metro').onclick = (e) => {
+            isMetronomeOn = !isMetronomeOn;
+            e.target.classList.toggle('text-white', isMetronomeOn);
+            e.target.classList.toggle('text-neutral-400', !isMetronomeOn);
+            e.target.classList.toggle('bg-orange-900/50', isMetronomeOn);
+            e.target.classList.toggle('border-orange-500', isMetronomeOn);
+            e.target.classList.toggle('bg-neutral-800', !isMetronomeOn);
+            e.target.classList.toggle('border-neutral-700', !isMetronomeOn);
+        };
+
         // --- Performance Recording Logic (MP3 via Lamejs) ---
+
         let mp3Encoder;
         let processorNode;
         let micSource;
@@ -1246,7 +1754,6 @@
             if (!audioCtx) initAudio();
 
             if (isRecordingPerf) {
-                // Stop Recording
                 isRecordingPerf = false;
                 
                 const mp3buf = mp3Encoder.flush();
@@ -1260,7 +1767,6 @@
                 const url = URL.createObjectURL(blob);
                 downloadPerfBtn.href = url;
                 
-                // Format filename with Date and Time
                 const now = new Date();
                 const pad = n => n.toString().padStart(2, '0');
                 const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
@@ -1274,19 +1780,15 @@
                 downloadPerfBtn.classList.remove('hidden');
                 downloadPerfBtn.classList.add('flex');
             } else {
-                // Start Recording
                 isRecordingPerf = true;
                 recordedChunks = [];
                 
-                // Initialize lamejs MP3 Encoder (Mono, Context Sample Rate, 128kbps)
                 const sampleRate = audioCtx.sampleRate;
                 mp3Encoder = new lamejs.Mp3Encoder(1, sampleRate, 128); 
 
                 micSource = audioCtx.createMediaStreamSource(streamDestination.stream);
                 processorNode = audioCtx.createScriptProcessor(4096, 1, 1);
                 
-                // We route the processor to a silent node to drive the audio processing 
-                // engine without causing a feedback loop in your speakers.
                 silentGainNode = audioCtx.createGain();
                 silentGainNode.gain.value = 0;
 
@@ -1295,7 +1797,6 @@
                     const channelData = e.inputBuffer.getChannelData(0);
                     const sampleBlock = new Int16Array(channelData.length);
                     for (let i = 0; i < channelData.length; i++) {
-                        // Clamp and convert Float32 [-1, 1] to Int16 [-32768, 32767]
                         let s = Math.max(-1, Math.min(1, channelData[i]));
                         sampleBlock[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
                     }
@@ -1316,6 +1817,7 @@
         });
 
         // --- Sample Recording Logic (System Audio) ---
+
         let sampleRecorder;
         let sampleChunks = [];
         let sampleStream;
@@ -1325,26 +1827,16 @@
             if (!audioCtx) initAudio();
 
             if (isRecordingSample) {
-                // Stop recording
                 isRecordingSample = false;
-                if (sampleRecorder && sampleRecorder.state === 'recording') {
-                    sampleRecorder.stop();
-                }
-                if (sampleStream) {
-                    sampleStream.getTracks().forEach(track => track.stop());
-                }
+                if (sampleRecorder && sampleRecorder.state === 'recording') sampleRecorder.stop();
+                if (sampleStream) sampleStream.getTracks().forEach(track => track.stop());
                 
-                recordSampleBtn.innerHTML = '<span class="w-2 h-2 rounded-full bg-red-500"></span> Sample Recorder';
+                recordSampleBtn.innerHTML = '<span class="w-2 h-2 rounded-full bg-red-500"></span> System Audio';
                 recordSampleBtn.classList.replace('bg-red-600', 'bg-red-900/50');
                 recordSampleBtn.classList.remove('animate-pulse');
             } else {
-                // Start recording
                 try {
-                    // Ask for display media (system audio)
-                    sampleStream = await navigator.mediaDevices.getDisplayMedia({ 
-                        video: true, // Required by browsers to prompt screen share UI
-                        audio: true 
-                    });
+                    sampleStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
 
                     if (sampleStream.getAudioTracks().length === 0) {
                         alert("No audio track detected! Please make sure to toggle 'Share audio' or 'Share system audio' when selecting a tab or screen.");
@@ -1355,18 +1847,14 @@
                     sampleChunks = [];
                     sampleRecorder = new MediaRecorder(sampleStream);
                     
-                    sampleRecorder.ondataavailable = e => {
-                        if (e.data.size > 0) sampleChunks.push(e.data);
-                    };
+                    sampleRecorder.ondataavailable = e => { if (e.data.size > 0) sampleChunks.push(e.data); };
                     
                     sampleRecorder.onstop = async () => {
                         const blob = new Blob(sampleChunks, { type: sampleRecorder.mimeType });
                         const arrayBuffer = await blob.arrayBuffer();
                         try {
                             audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-                            slices = []; 
-                            zoom = 1; 
-                            pan = 0;
+                            slices = []; zoom = 1; pan = 0;
                             emptyState.style.display = 'none';
                             drawWaveform();
                             await detectBPM(audioBuffer);
@@ -1384,11 +1872,7 @@
                     recordSampleBtn.classList.replace('bg-red-900/50', 'bg-red-600');
                     recordSampleBtn.classList.add('animate-pulse');
 
-                    // Handle user stopping screen share via native browser UI "Stop sharing" button
-                    sampleStream.getVideoTracks()[0].onended = () => {
-                        if (isRecordingSample) recordSampleBtn.click();
-                    };
-
+                    sampleStream.getVideoTracks()[0].onended = () => { if (isRecordingSample) recordSampleBtn.click(); };
                 } catch (err) {
                     console.error("Error accessing media devices.", err);
                     if (err.name !== 'NotAllowedError') {
@@ -1399,7 +1883,12 @@
         });
 
         window.addEventListener('resize', () => { drawWaveform(); });
+        
+        // Boot
         initPads();
+        initSequencer();
+        initMixer(); // Initialize the mixer UI hooks
+
     </script>
 </body>
 </html>
